@@ -52,7 +52,7 @@ public class TestJDBC {
     private static java.util.Properties info = new java.util.Properties();
 
     static {
-        param1 = "xpack.security.user=" + user + ":" + password;
+        param1 = "xpack.security.user=" + user + ":" + password + "&cluster.name=VV7im_K";
         param = "xpack.security.user=" + user + ":" + password + "&xpack.security.transport.ssl.enabled=true&xpack.security.transport.ssl.verification_mode=certificate&xpack.security.transport.ssl.keystore.path=/Users/zy-xx/Documents/学习/elasticSearch/6/elasticsearch/elastic-certificates.p12&xpack.security.transport.ssl.truststore.path=/Users/zy-xx/Documents/学习/elasticSearch/6/elasticsearch/elastic-certificates.p12";
         info.put("xpack.security.user", user + ":" + password);
         info.put("xpack.security.transport.ssl.enabled", "true");
@@ -73,9 +73,9 @@ public class TestJDBC {
 
     @org.junit.Test
     public void testInsertPrepareStatement() throws Exception {
+        System.out.println( "Hello World!" );
         Class.forName("org.elasticsearch.jdbc.ElasticSearchDriver");
-        Connection connection = DriverManager.getConnection("jdbc:elasticsearch://127.0.0.1:9300?" + param);
-//        Connection connection = DriverManager.getConnection("jdbc:elasticsearch://localhost:9300","elastic","changeme");
+        Connection connection = DriverManager.getConnection("jdbc:elasticsearch://localhost:9300","elastic","changeme");
         connection.setAutoCommit(false);
         PreparedStatement ps = connection.prepareStatement("INSERT INTO \"t_dsmanager_dataejj.xdh_type1\" (DATACODE, DATAROLELEVEL, ID, DATAISRELATION) VALUES ( ?,  ?,  ?,  ?)");
         ps.setString(1,"aa\\aab\\");
@@ -84,12 +84,12 @@ public class TestJDBC {
         ps.setString(4,null);
         int result = ps.executeUpdate();
         connection.commit();
-        ps.setString(1,"涨\\\\是'");
-        ps.setString(2,null);
-        ps.setString(3,"XZXT.LASDS");
-        ps.setString(4,"1");
-        int result1 = ps.executeUpdate();
-        connection.commit();
+//        ps.setString(1,"涨\\\\是\\");
+//        ps.setString(2,null);
+//        ps.setString(3,"XZXT.LASDS");
+//        ps.setString(4,"1");
+//        int result1 = ps.executeUpdate();
+//        connection.commit();
 //        ps.setString(1,"my_index_dyna222xx");
 //        ps.setString(2,"1");
 //        ps.setString(3,"1");
@@ -108,8 +108,7 @@ public class TestJDBC {
     @org.junit.Test
     public void testInsertStatement() throws Exception {
         Class.forName("org.elasticsearch.jdbc.ElasticSearchDriver");
-        Connection connection = DriverManager.getConnection("jdbc:elasticsearch://127.0.0.1:9300?" + param);
-//        Connection connection = DriverManager.getConnection("jdbc:elasticsearch://localhost:9300","elastic","changeme");
+        Connection connection = DriverManager.getConnection("jdbc:elasticsearch://localhost:9300","elastic","changeme");
         connection.setAutoCommit(false);
         Statement statement = connection.createStatement();
         int result = statement.executeUpdate(insertSql6);
@@ -122,8 +121,8 @@ public class TestJDBC {
     @org.junit.Test
     public void testQueryStatement() throws Exception {
         Class.forName("org.elasticsearch.jdbc.ElasticSearchDriver");
-        Connection connection = DriverManager.getConnection("jdbc:elasticsearch://127.0.0.1:9300?" + param);
-//        Connection connection = DriverManager.getConnection("jdbc:elasticsearch://localhost:9300","elastic","changeme");
+//        Connection connection = DriverManager.getConnection("jdbc:elasticsearch://127.0.0.1:9300?" + param1);
+        Connection connection = DriverManager.getConnection("jdbc:elasticsearch://localhost:9300","elastic","changeme");
         Statement statement = connection.createStatement();
         ResultSet resultSet1 = statement.executeQuery(query1);
         while (resultSet1.next()) {
@@ -146,7 +145,7 @@ public class TestJDBC {
     @org.junit.Test
     public void testQueryPrepareStatement() throws Exception {
         Class.forName("org.elasticsearch.jdbc.ElasticSearchDriver");
-        Connection connection = DriverManager.getConnection("jdbc:elasticsearch://127.0.0.1:9300?" + param);
+        Connection connection = DriverManager.getConnection("jdbc:elasticsearch://localhost:9300/");
         PreparedStatement ps = connection.prepareStatement(query2);
         ResultSet resultSet = ps.executeQuery();
         List<String> result = new ArrayList<String>();

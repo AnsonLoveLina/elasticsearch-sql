@@ -130,8 +130,8 @@ public class ElasticSearchConnection implements Connection {
 
     @Override
     public DatabaseMetaData getMetaData() throws SQLException {
-        String host = ((TransportClient) client).transportAddresses().get(0).address().getHostName();
-        int port = ((TransportClient) client).transportAddresses().get(0).address().getPort();
+        String host = ((TransportClient) client).transportAddresses().get(0).getHost();
+        int port = ((TransportClient) client).transportAddresses().get(0).getPort();
         return new ESDatabaseMetaData(host, port, client, this.getClientInfo(), this);
     }
 

@@ -8,8 +8,10 @@ import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.settings.SecureString;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.transport.TransportAddress;
 import org.elasticsearch.plugin.nlpcn.QueryActionElasticExecutor;
+import org.elasticsearch.plugins.Plugin;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.elasticsearch.xpack.client.PreBuiltXPackTransportClient;
 import org.nlpcn.es4sql.SearchDao;
@@ -27,6 +29,7 @@ import java.net.UnknownHostException;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.util.*;
+import java.util.function.BiConsumer;
 
 
 public class QueryExecutor {
@@ -49,7 +52,7 @@ public class QueryExecutor {
 
         Action queryAction = searchDao.explain(query);
         Object execution = QueryActionElasticExecutor.executeAnyAction(searchDao.getClient(), queryAction);
-        return new ObjectResultsExtractor(includeScore, includeType, includeId, false, queryAction).extractResults(execution, flat);
+        return new ObjectResultsExtractor(includeScore, includeType, includeId).extractResults(execution, flat);
     }
 
     public Action getAction(String query) throws Exception {
@@ -105,7 +108,7 @@ public class QueryExecutor {
                     TransportAddress[] addresses = new TransportAddress[uriList.size()];
                     try {
                         for (int i = 0; i < addresses.length; ++i) {
-                            addresses[i] = new TransportAddress(InetAddress.getByName(uriList.get(i).getHost()), uriList.get(i).getPort());
+                            addresses[i] = new InetSocketTransportAddress(InetAddress.getByName(uriList.get(i).getHost()), uriList.get(i).getPort());
                         }
                     } catch (UnknownHostException e) {
                         throw new SQLException(e);

@@ -8,8 +8,8 @@ public class SqlParseException extends SQLException {
         super(message);
     }
 
-    public SqlParseException(String message, Throwable throwable) {
-        super(message, throwable);
+    public SqlParseException(String message, Throwable cause) {
+        super(message, cause);
     }
 
 
