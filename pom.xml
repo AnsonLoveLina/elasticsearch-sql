@@ -5,7 +5,7 @@
     <version>1.0-SNAPSHOT</version>
 
     <groupId>com.ngw</groupId>
-    <artifactId>elasticsearch-sql</artifactId>
+    <artifactId>elasticsearch-sql6.8.2</artifactId>
     <packaging>jar</packaging>
 
 
