@@ -6,7 +6,7 @@
 
     <groupId>com.ngw</groupId>
 
-    <artifactId>elasticsearch-sql</artifactId>
+    <artifactId>elasticsearch-sql5.3.0</artifactId>
     <packaging>jar</packaging>
 
 
