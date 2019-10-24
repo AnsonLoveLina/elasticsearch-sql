@@ -152,7 +152,7 @@ public class ElasticSearchConnection implements Connection {
 
     @Override
     public String getCatalog() throws SQLException {
-        throw new SQLFeatureNotSupportedException(Util.getLoggingInfo());
+        return null;
     }
 
     @Override
