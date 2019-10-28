@@ -23,7 +23,7 @@ public class Select extends Query {
 	private List<Order> orderBys = new ArrayList<>();
     private boolean containsSubQueries;
     private List<SubQueryExpression> subQueries;
-	public boolean isQuery = false;
+	public boolean isQuery = true;
     private boolean selectAll = false;
 
 	public boolean isAgg = false;
@@ -56,9 +56,9 @@ public class Select extends Query {
 	}
 
 	public void addOrderBy(String nestedPath, String name, String type, ScriptSortBuilder.ScriptSortType scriptSortType) {
-		if ("_score".equals(name)) { //zhongshu-comment 可以直接在order by子句中写_score，根据该字段排序 select * from tbl order by _score asc
-			isQuery = true;
-		}
+//		if ("_score".equals(name)) { //zhongshu-comment 可以直接在order by子句中写_score，根据该字段排序 select * from tbl order by _score asc
+//			isQuery = true;
+//		}
 		Order order = new Order(nestedPath, name, type);
 
 		order.setScriptSortType(scriptSortType);
