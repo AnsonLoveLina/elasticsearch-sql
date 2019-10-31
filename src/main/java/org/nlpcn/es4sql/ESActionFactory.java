@@ -3,10 +3,7 @@ package org.nlpcn.es4sql;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLQueryExpr;
-import com.alibaba.druid.sql.ast.statement.SQLDeleteStatement;
-import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
-import com.alibaba.druid.sql.ast.statement.SQLJoinTableSource;
-import com.alibaba.druid.sql.ast.statement.SQLUnionQuery;
+import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.ParserException;
@@ -19,10 +16,7 @@ import org.elasticsearch.plugin.nlpcn.ElasticResultHandler;
 import org.elasticsearch.plugin.nlpcn.QueryActionElasticExecutor;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
-import org.nlpcn.es4sql.domain.Delete;
-import org.nlpcn.es4sql.domain.Insert;
-import org.nlpcn.es4sql.domain.JoinSelect;
-import org.nlpcn.es4sql.domain.Select;
+import org.nlpcn.es4sql.domain.*;
 import org.nlpcn.es4sql.exception.SqlParseException;
 import org.nlpcn.es4sql.index.InsertAction;
 import org.nlpcn.es4sql.parse.ElasticLexer;
@@ -72,18 +66,23 @@ public class ESActionFactory {
                     return handleSelect(client, select);
                 }
             case "DELETE":
-                SQLStatementParser parser = createSqlStatementParser(sql);
-                SQLDeleteStatement deleteStatement = parser.parseDeleteStatement();
+                SQLStatementParser deleteParser = createSqlStatementParser(sql);
+                SQLDeleteStatement deleteStatement = deleteParser.parseDeleteStatement();
                 Delete delete = new SqlParser().parseDelete(deleteStatement);
                 return new DeleteQueryAction(client, delete);
             case "SHOW":
                 return new ShowQueryAction(client, sql);
             case "INSERT":
-                SQLStatementParser sqlParser = createSqlStatementParser(sql);
-                SQLStatement insertStatement = sqlParser.parseInsert();
+                SQLStatementParser insertParser = createSqlStatementParser(sql);
+                SQLStatement insertStatement = insertParser.parseInsert();
                 Insert insert = new SqlParser().parseInsert((SQLInsertStatement) insertStatement);
                 return new InsertAction(client, insert);
 //                return null;
+            case "UPDATE":
+                SQLStatementParser updateParser = createSqlStatementParser(sql);
+                SQLUpdateStatement updateStatement = updateParser.parseUpdateStatement();
+                Update update = new SqlParser().parseUpdate(updateStatement);
+                return new UpdateQueryAction(client, update);
             default:
                 throw new SQLFeatureNotSupportedException(String.format("Unsupported query: %s", sql));
         }

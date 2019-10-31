@@ -67,8 +67,41 @@ public class TestJDBC {
 //        System.out.println("sql" + insertSql5 + ":\n----------\n" + Util.sqlToEsQuery(query1));
         testInsertStatement();
         testInsertPrepareStatement();
+        testUpdatePrepareStatement();
         testQueryStatement();
         testQueryPrepareStatement();
+    }
+
+    @org.junit.Test
+    public void testUpdatePrepareStatement() throws Exception {
+        Class.forName("org.elasticsearch.jdbc.ElasticSearchDriver");
+        Connection connection = DriverManager.getConnection("jdbc:elasticsearch://127.0.0.1:9300?" + param);
+//        Connection connection = DriverManager.getConnection("jdbc:elasticsearch://localhost:9300","elastic","changeme");
+        connection.setAutoCommit(false);
+        PreparedStatement ps = connection.prepareStatement("update /*! CONFLICTS(proceed) */t_dsmanager_data set DATACODE=?,ID=?");
+        ps.setString(1, "qq");
+        ps.setString(2, "ww");
+        int result = ps.executeUpdate();
+        connection.commit();
+//        ps.setString(1,"涨\\\\是'");
+//        ps.setString(2,null);
+//        ps.setString(3,"XZXT.LASDS");
+//        ps.setString(4,"1");
+//        int result1 = ps.executeUpdate();
+//        connection.commit();
+//        ps.setString(1,"my_index_dyna222xx");
+//        ps.setString(2,"1");
+//        ps.setString(3,"1");
+//        ps.setString(4,null);
+//        int result1 = ps.executeUpdate();
+        System.out.println("result = " + result);
+//        connection.rollback();
+//        Statement statement = connection.createStatement();
+//        int result1 = statement.executeUpdate(insertSql6);
+//        System.out.println("result1 = " + result1);
+//        connection.commit();
+        ps.close();
+        connection.close();
     }
 
     @org.junit.Test
@@ -77,18 +110,12 @@ public class TestJDBC {
         Connection connection = DriverManager.getConnection("jdbc:elasticsearch://127.0.0.1:9300?" + param);
 //        Connection connection = DriverManager.getConnection("jdbc:elasticsearch://localhost:9300","elastic","changeme");
         connection.setAutoCommit(false);
-        PreparedStatement ps = connection.prepareStatement("INSERT INTO \"t_dsmanager_dataejj.xdh_type1\" (DATACODE, DATAROLELEVEL, ID, DATAISRELATION) VALUES ( ?,  ?,  ?,  ?)");
-        ps.setString(1,"aa\\aab\\");
-        ps.setString(2,"\\1");
-        ps.setString(3,null);
-        ps.setString(4,null);
+        PreparedStatement ps = connection.prepareStatement("INSERT INTO t_dsmanager_data (DATACODE, DATAROLELEVEL, ID, DATAISRELATION) VALUES ( ?,  ?,  ?,  ?)");
+        ps.setString(1, "涨\\\\是'");
+        ps.setString(2, null);
+        ps.setString(3, "XZXT.LASDS");
+        ps.setString(4, "1");
         int result = ps.executeUpdate();
-        connection.commit();
-        ps.setString(1,"涨\\\\是'");
-        ps.setString(2,null);
-        ps.setString(3,"XZXT.LASDS");
-        ps.setString(4,"1");
-        int result1 = ps.executeUpdate();
         connection.commit();
 //        ps.setString(1,"my_index_dyna222xx");
 //        ps.setString(2,"1");

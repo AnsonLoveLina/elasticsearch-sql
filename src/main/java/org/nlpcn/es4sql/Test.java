@@ -114,7 +114,7 @@ public class Test {
 //                "floor(substring(newtype,0,14)/100)/5)*5 as key," +
 //                "count(distinct(num)) cvalue FROM twitter2 " +
 //                "group by key ";
-        SqlElasticRequestBuilder query = Util.sqlToEsQuery("select * from ['v_znb_05_kzzyga009_new'] where q=query('极光 网吧') order by ddd");
+        SqlElasticRequestBuilder query = Util.sqlToEsQuery("update t_dsmanager_data set DATACODE='ffff' where _id='1' limit 0,100");
         System.out.println("query = " + query.explain());
 
     }

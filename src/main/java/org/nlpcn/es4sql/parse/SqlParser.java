@@ -6,6 +6,7 @@ import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlOrderingExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 import org.elasticsearch.search.sort.ScriptSortBuilder;
 import org.nlpcn.es4sql.Util;
 import org.nlpcn.es4sql.domain.*;
@@ -88,6 +89,24 @@ public class SqlParser {
 
         findGroupBy(query, select); //zhongshu-comment aggregations
         return select;
+    }
+
+    public Update parseUpdate(SQLUpdateStatement updateStatement) throws SqlParseException {
+        Update update = new Update();
+        WhereParser whereParser = new WhereParser(this, updateStatement);
+
+        update.getFrom().addAll(findFrom(updateStatement.getTableSource()));
+
+        update.setWhere(whereParser.findWhere());
+
+        update.setItems(updateStatement.getItems());
+
+        //先不管update hint
+        update.getHints().addAll(parseHints(updateStatement.getHints()));
+
+        findLimit(((MySqlUpdateStatement) updateStatement).getLimit(), update);
+
+        return update;
     }
 
     public Insert parseInsert(SQLInsertStatement insertStatement) throws SqlParseException {
@@ -375,14 +394,26 @@ public class SqlParser {
         }
     }
 
-    private List<Hint> parseHints(List<SQLCommentHint> sqlHints) throws SqlParseException {
+    private List<Hint> parseHints(List<? extends SQLHint> sqlHints) throws SqlParseException {
         List<Hint> hints = new ArrayList<>();
-        for (SQLCommentHint sqlHint : sqlHints) {
-            Hint hint = HintFactory.getHintFromString(sqlHint.getText());
+        for (SQLHint sqlHint : sqlHints) {
+            if (!(sqlHint instanceof SQLCommentHint)) {
+                continue;
+            }
+            Hint hint = HintFactory.getHintFromString(((SQLCommentHint) sqlHint).getText());
             if (hint != null) hints.add(hint);
         }
         return hints;
     }
+
+//    private List<Hint> parseHints(List<SQLCommentHint> sqlHints) throws SqlParseException {
+//        List<Hint> hints = new ArrayList<>();
+//        for (SQLCommentHint sqlHint : sqlHints) {
+//            Hint hint = HintFactory.getHintFromString(sqlHint.getText());
+//            if (hint != null) hints.add(hint);
+//        }
+//        return hints;
+//    }
 
     private JoinSelect createBasicJoinSelectAccordingToTableSource(SQLJoinTableSource joinTableSource) throws SqlParseException {
         JoinSelect joinSelect = new JoinSelect();

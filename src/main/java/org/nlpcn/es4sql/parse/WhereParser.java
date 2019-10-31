@@ -3,6 +3,7 @@ package org.nlpcn.es4sql.parse;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.expr.*;
 import com.alibaba.druid.sql.ast.statement.SQLDeleteStatement;
+import com.alibaba.druid.sql.ast.statement.SQLUpdateStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -24,6 +25,7 @@ import java.util.List;
 public class WhereParser {
 
     private MySqlSelectQueryBlock query;
+    private SQLUpdateStatement update;
     private SQLDeleteStatement delete;
     private SQLExpr where;
     private SqlParser sqlParser;
@@ -32,6 +34,12 @@ public class WhereParser {
         this.sqlParser = sqlParser;
         this.query = query;
         this.where = query.getWhere();
+    }
+
+    public WhereParser(SqlParser sqlParser, SQLUpdateStatement update) {
+        this.sqlParser = sqlParser;
+        this.update = update;
+        this.where = update.getWhere();
     }
 
     public WhereParser(SqlParser sqlParser, SQLDeleteStatement delete) {

@@ -62,7 +62,11 @@ public class QueryExecutor {
     }
 
     public void add(IndexAction action, BulkRequestBuilder bulkRequestBuilder) throws Exception {
-        bulkRequestBuilder.add((IndexRequestBuilder) action.explain().getBuilder());
+        if (action.explain().getBuilder() instanceof BulkRequestBuilder) {
+            bulkRequestBuilder.add((IndexRequestBuilder) action.explain().getBuilder());
+        } else {
+            action.explain().get();
+        }
     }
 
     public void commit(BulkRequestBuilder bulkRequestBuilder) throws Exception {
