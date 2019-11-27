@@ -111,14 +111,14 @@ public class QueryExecutor {
                         for (int i = 0; i < addresses.length; ++i) {
                             addresses[i] = new TransportAddress(InetAddress.getByName(uriList.get(i).getHost()), uriList.get(i).getPort());
                         }
+
+                        if (clientClass[0]) {
+                            client = new PreBuiltXPackTransportClient(builder.build()).addTransportAddresses(addresses);
+                        } else {
+                            client = new PreBuiltTransportClient(builder.build(), plugins).addTransportAddresses(addresses);
+                        }
                     } catch (UnknownHostException e) {
                         throw new SQLException(e);
-                    }
-
-                    if (clientClass[0]) {
-                        client = new PreBuiltXPackTransportClient(builder.build()).addTransportAddresses(addresses);
-                    } else {
-                        client = new PreBuiltTransportClient(builder.build(), plugins).addTransportAddresses(addresses);
                     }
 //                    client = new PreBuiltTransportClient(builder.build(), SearchGuardSSLPlugin.class).addTransportAddresses(addresses);
 //                    String token = basicAuthHeaderValue(user, new SecureString(password.toCharArray()));
