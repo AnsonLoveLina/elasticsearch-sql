@@ -59,7 +59,7 @@ public class ElasticSearchConnection implements Connection {
         if (this.client == null) {
             throw new SQLException("Unable to connect on specified urls " + queryExecutor.getUriList());
         }
-        ElasticSearchPreparedStatement st = new ElasticSearchPreparedStatement(this,sql);
+        ElasticSearchPreparedStatement st = new ElasticSearchPreparedStatement(this, sql);
         statements.add(st);
         return st;
     }
@@ -90,7 +90,7 @@ public class ElasticSearchConnection implements Connection {
 
     @Override
     public void commit() throws SQLException {
-        if (this.autoCommit){
+        if (this.autoCommit) {
             return;
         }
         try {
@@ -104,7 +104,7 @@ public class ElasticSearchConnection implements Connection {
             queryExecutor.commit(bulkRequest);
             bulkRequest = this.client.prepareBulk();
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new SQLException(e);
         }
     }
 
