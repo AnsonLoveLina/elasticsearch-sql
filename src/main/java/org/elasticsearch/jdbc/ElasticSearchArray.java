@@ -5,6 +5,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -38,7 +39,16 @@ public class ElasticSearchArray implements Array {
 
     @Override
     public Object getArray() throws SQLException {
-        throw new SQLFeatureNotSupportedException();
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (List<Object> lists : lines) {
+            Map<String, Object> resultMap = new HashMap<>();
+            for (int i = 0; i < headers.size(); i++) {
+                String key = headers.get(i);
+                Object value = lists.get(i);
+                resultMap.put(key, value);
+            }
+        }
+        return result;
     }
 
     @Override
