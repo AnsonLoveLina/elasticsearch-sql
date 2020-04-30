@@ -130,13 +130,13 @@ public class ObjectResultsExtractor {
                 Collection<? extends MultiBucketsAggregation.Bucket> buckets = bucketsAggregation.getBuckets();
 
                 //clone current line.
-                ElasticSearchArray elasticSearchArray = new ElasticSearchArray();
-                List<Object> currentLine = lines.get(lineIndex);
-                currentLine.add(elasticSearchArray);
-                List<String> bucksHeaders = elasticSearchArray.getHeaders();
-                List<List<Object>> bucksLines = elasticSearchArray.getLines();
+                List<String> bucksHeaders = new ArrayList<>();
                 bucksHeaders.add(name + Util.KEY_NAME);
                 bucksHeaders.add(name + Util.COUNT_NAME);
+                ElasticSearchArray elasticSearchArray = new ElasticSearchArray(bucksHeaders, null);
+                List<Object> currentLine = lines.get(lineIndex);
+                currentLine.add(elasticSearchArray);
+                List<List<Object>> bucksLines = elasticSearchArray.getLines();
 //                List<Object> clonedLine = new ArrayList<>(currentLine);
 
                 //call handle_Agg with current_line++

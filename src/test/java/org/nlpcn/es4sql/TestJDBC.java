@@ -225,20 +225,9 @@ public class TestJDBC {
         Connection connection = DriverManager.getConnection("jdbc:elasticsearch://127.0.0.1:9300?" + param);
 //        Connection connection = DriverManager.getConnection("jdbc:elasticsearch://localhost:9300","elastic","changeme");
         Statement statement = connection.createStatement();
-        ResultSet resultSet = statement.executeQuery("SELECT * from  my_index group by (key2),(key3)");
-        while (resultSet.next()) {
-            ElasticSearchArray elasticSearchArray = (ElasticSearchArray) resultSet.getObject("key2BUCKS");
-            ResultSet resultSet1 = elasticSearchArray.getResultSet();
-            while (resultSet1.next()) {
-                System.out.println(resultSet1.getObject("key2KEY"));
-                System.out.println(resultSet1.getObject("key2COUNT"));
-            }
-            ElasticSearchArray elasticSearchArray1 = (ElasticSearchArray) resultSet.getObject("key3BUCKS");
-            ResultSet resultSet2 = elasticSearchArray1.getResultSet();
-            while (resultSet2.next()) {
-                System.out.println(resultSet2.getObject("key3KEY"));
-                System.out.println(resultSet2.getObject("key3COUNT"));
-            }
+        ResultSet resultSet1 = statement.executeQuery(query1);
+        while (resultSet1.next()) {
+            Boolean fieldBoolean = resultSet1.getBoolean("fieldBoolean");
         }
 //        ResultSet resultSet2 = statement.executeQuery(group2);
 //        while (resultSet2.next()) {

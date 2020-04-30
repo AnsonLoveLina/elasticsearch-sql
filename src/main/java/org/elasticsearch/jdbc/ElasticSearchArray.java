@@ -23,8 +23,22 @@ public class ElasticSearchArray implements Array {
     private List<String> headers = new ArrayList<>();
     private List<List<Object>> lines = new ArrayList<>();
 
+    public ElasticSearchArray(List<String> headers, List<List<Object>> lines) {
+        if (headers != null) {
+            this.headers = headers;
+        }
+        if (lines != null) {
+            this.lines = lines;
+        }
+        elasticSearchResultSet = new ElasticSearchResultSet(this.headers, this.lines);
+    }
+
     public ElasticSearchArray() {
-        elasticSearchResultSet = new ElasticSearchResultSet(headers, lines);
+        elasticSearchResultSet = new ElasticSearchResultSet(this.headers, this.lines);
+    }
+
+    public void addHeaders(String columnName) {
+        headers.add(columnName);
     }
 
     @Override
@@ -39,6 +53,9 @@ public class ElasticSearchArray implements Array {
 
     @Override
     public Object getArray() throws SQLException {
+        while (elasticSearchResultSet.next()) {
+            elasticSearchResultSet.getMetaData();
+        }
         List<Map<String, Object>> result = new ArrayList<>();
         for (List<Object> lists : lines) {
             Map<String, Object> resultMap = new HashMap<>();
