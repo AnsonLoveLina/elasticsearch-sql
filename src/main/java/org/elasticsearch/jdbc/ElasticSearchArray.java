@@ -53,9 +53,6 @@ public class ElasticSearchArray implements Array {
 
     @Override
     public Object getArray() throws SQLException {
-        while (elasticSearchResultSet.next()) {
-            elasticSearchResultSet.getMetaData();
-        }
         List<Map<String, Object>> result = new ArrayList<>();
         for (List<Object> lists : lines) {
             Map<String, Object> resultMap = new HashMap<>();
@@ -64,6 +61,7 @@ public class ElasticSearchArray implements Array {
                 Object value = lists.get(i);
                 resultMap.put(key, value);
             }
+            result.add(resultMap);
         }
         return result;
     }

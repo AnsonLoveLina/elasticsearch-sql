@@ -5,6 +5,7 @@ import org.elasticsearch.jdbc.ElasticSearchArray;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by zy-xx on 2019/9/18.
@@ -149,6 +150,35 @@ public class TestJDBC {
     }
 
     @org.junit.Test
+    public void testGroupStatement() throws Exception {
+        Class.forName("org.elasticsearch.jdbc.ElasticSearchDriver");
+        Connection connection = DriverManager.getConnection("jdbc:elasticsearch://127.0.0.1:9300?" + param);
+//        Connection connection = DriverManager.getConnection("jdbc:elasticsearch://localhost:9300","elastic","changeme");
+        Statement statement = connection.createStatement();
+        ResultSet resultSet = statement.executeQuery("SELECT * from  my_index group by key2");
+        while (resultSet.next()) {
+            ElasticSearchArray elasticSearchArray = (ElasticSearchArray) resultSet.getObject("key2BUCKS");
+            List<Map<String, Object>> resultSet1 = (List<Map<String, Object>>) elasticSearchArray.getArray();
+            for (Map<String, Object> map : resultSet1) {
+                System.out.println("key2KEY:" + map.get("key2KEY"));
+                System.out.println("key2COUNT:" + map.get("key2COUNT"));
+            }
+        }
+//        ResultSet resultSet2 = statement.executeQuery(group2);
+//        while (resultSet2.next()) {
+//            Long array = resultSet2.getLong("stats(key2).count");
+//            System.out.println("array = " + array);
+//        }
+//        ResultSet resultSet3 = statement.executeQuery(group3);
+//        while (resultSet3.next()) {
+//            Array array = resultSet3.getArray("key2BUCKS");
+//            System.out.println("array = " + array);
+//        }
+        statement.close();
+        connection.close();
+    }
+
+    @org.junit.Test
     public void testGroupStatement1() throws Exception {
         Class.forName("org.elasticsearch.jdbc.ElasticSearchDriver");
         Connection connection = DriverManager.getConnection("jdbc:elasticsearch://127.0.0.1:9300?" + param);
@@ -158,15 +188,15 @@ public class TestJDBC {
         while (resultSet.next()) {
             resultSet.getFetchSize();
             ElasticSearchArray elasticSearchArray = (ElasticSearchArray) resultSet.getObject("key2BUCKS");
-            ResultSet resultSet1 = elasticSearchArray.getResultSet();
-            while (resultSet1.next()) {
-                System.out.println("key2KEY" + resultSet1.getObject("key2KEY"));
-                System.out.println("key2COUNT" + resultSet1.getObject("key2COUNT"));
-                ElasticSearchArray elasticSearchArray1 = (ElasticSearchArray) resultSet1.getObject("key3BUCKS");
-                ResultSet resultSet2 = elasticSearchArray1.getResultSet();
-                while (resultSet2.next()) {
-                    System.out.println("key3KEY" + resultSet2.getObject("key3KEY"));
-                    System.out.println("key3COUNT" + resultSet2.getObject("key3COUNT"));
+            List<Map<String, Object>> resultSet1 = (List<Map<String, Object>>) elasticSearchArray.getArray();
+            for (Map<String, Object> map : resultSet1) {
+                System.out.println("key2KEY:" + map.get("key2KEY"));
+                System.out.println("key2COUNT:" + map.get("key2COUNT"));
+                ElasticSearchArray elasticSearchArray1 = (ElasticSearchArray) map.get("key3BUCKS");
+                List<Map<String, Object>> resultSet2 = (List<Map<String, Object>>) elasticSearchArray1.getArray();
+                for (Map<String, Object> map2 : resultSet2) {
+                    System.out.println("key3KEY:" + map2.get("key3KEY"));
+                    System.out.println("key3COUNT:" + map2.get("key3COUNT"));
                 }
             }
         }
@@ -193,16 +223,16 @@ public class TestJDBC {
         ResultSet resultSet = statement.executeQuery("SELECT * from  my_index group by (key2),(key3)");
         while (resultSet.next()) {
             ElasticSearchArray elasticSearchArray = (ElasticSearchArray) resultSet.getObject("key2BUCKS");
-            ResultSet resultSet1 = elasticSearchArray.getResultSet();
-            while (resultSet1.next()) {
-                System.out.println(resultSet1.getObject("key2KEY"));
-                System.out.println(resultSet1.getObject("key2COUNT"));
+            List<Map<String, Object>> resultSet1 = (List<Map<String, Object>>) elasticSearchArray.getArray();
+            for (Map<String, Object> map : resultSet1) {
+                System.out.println("key2KEY:" + map.get("key2KEY"));
+                System.out.println("key2COUNT:" + map.get("key2COUNT"));
             }
             ElasticSearchArray elasticSearchArray1 = (ElasticSearchArray) resultSet.getObject("key3BUCKS");
-            ResultSet resultSet2 = elasticSearchArray1.getResultSet();
-            while (resultSet2.next()) {
-                System.out.println(resultSet2.getObject("key3KEY"));
-                System.out.println(resultSet2.getObject("key3COUNT"));
+            List<Map<String, Object>> resultSet2 = (List<Map<String, Object>>) elasticSearchArray1.getArray();
+            for (Map<String, Object> map2 : resultSet2) {
+                System.out.println("key3KEY:" + map2.get("key3KEY"));
+                System.out.println("key3COUNT:" + map2.get("key3COUNT"));
             }
         }
 //        ResultSet resultSet2 = statement.executeQuery(group2);

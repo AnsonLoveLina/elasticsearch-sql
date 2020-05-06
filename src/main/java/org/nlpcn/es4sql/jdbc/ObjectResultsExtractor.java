@@ -121,6 +121,7 @@ public class ObjectResultsExtractor {
                 // TopHits topHitsAggregation = (TopHits) aggregation;
             }
             if (aggregation instanceof MultiBucketsAggregation) {
+                List<String> bucksHeaders = new ArrayList<>();
                 MultiBucketsAggregation bucketsAggregation = (MultiBucketsAggregation) aggregation;
                 String name = bucketsAggregation.getName();
                 //checking because it can comes from sub aggregation again
@@ -130,7 +131,6 @@ public class ObjectResultsExtractor {
                 Collection<? extends MultiBucketsAggregation.Bucket> buckets = bucketsAggregation.getBuckets();
 
                 //clone current line.
-                List<String> bucksHeaders = new ArrayList<>();
                 bucksHeaders.add(name + Util.KEY_NAME);
                 bucksHeaders.add(name + Util.COUNT_NAME);
                 ElasticSearchArray elasticSearchArray = new ElasticSearchArray(bucksHeaders, null);
