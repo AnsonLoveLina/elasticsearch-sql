@@ -59,6 +59,9 @@ public class ElasticSearchArray implements Array {
             for (int i = 0; i < headers.size(); i++) {
                 String key = headers.get(i);
                 Object value = lists.get(i);
+                if (value instanceof ElasticSearchArray) {
+                    value = ((ElasticSearchArray) value).getArray();
+                }
                 resultMap.put(key, value);
             }
             result.add(resultMap);

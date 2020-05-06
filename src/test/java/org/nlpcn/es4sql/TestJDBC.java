@@ -150,6 +150,16 @@ public class TestJDBC {
     }
 
     @org.junit.Test
+    public void testGroup() throws Exception {
+        System.out.println("group");
+        testGroupStatement();
+        System.out.println("group1");
+        testGroupStatement1();
+        System.out.println("group2");
+        testGroupStatement2();
+    }
+
+    @org.junit.Test
     public void testGroupStatement() throws Exception {
         Class.forName("org.elasticsearch.jdbc.ElasticSearchDriver");
         Connection connection = DriverManager.getConnection("jdbc:elasticsearch://127.0.0.1:9300?" + param);
@@ -192,11 +202,10 @@ public class TestJDBC {
             for (Map<String, Object> map : resultSet1) {
                 System.out.println("key2KEY:" + map.get("key2KEY"));
                 System.out.println("key2COUNT:" + map.get("key2COUNT"));
-                ElasticSearchArray elasticSearchArray1 = (ElasticSearchArray) map.get("key3BUCKS");
-                List<Map<String, Object>> resultSet2 = (List<Map<String, Object>>) elasticSearchArray1.getArray();
+                List<Map<String, Object>> resultSet2 = (List<Map<String, Object>>) map.get("key3BUCKS");
                 for (Map<String, Object> map2 : resultSet2) {
-                    System.out.println("key3KEY:" + map2.get("key3KEY"));
-                    System.out.println("key3COUNT:" + map2.get("key3COUNT"));
+                    System.out.println("    key3KEY:" + map2.get("key3KEY"));
+                    System.out.println("    key3COUNT:" + map2.get("key3COUNT"));
                 }
             }
         }
