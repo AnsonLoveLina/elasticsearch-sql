@@ -18,7 +18,7 @@ public class TestJDBC {
 
     private static String query1 = "SELECT * from  " + my_index + " limit 0,10";
 
-    private static String query2 = "SELECT parent,fieldA from  " + my_index_relation + " limit 0,10";
+    private static String query2 = "SELECT * from  " + my_index_relation + " limit 0,10";
 
     private static String group1 = "SELECT stats(key2) from  " + my_index + " group by (key2,key3)";
 
@@ -119,18 +119,17 @@ public class TestJDBC {
         ps.setString(3, "XZXT.LASDS");
         ps.setString(4, "1");
         int result = ps.executeUpdate();
-        connection.commit();
-//        ps.setString(1,"my_index_dyna222xx");
-//        ps.setString(2,"1");
-//        ps.setString(3,"1");
-//        ps.setString(4,null);
-//        int result1 = ps.executeUpdate();
+        ps.setString(1,"my_index_dyna222xx");
+        ps.setString(2,"1");
+        ps.setString(3,"1");
+        ps.setString(4,null);
+        int result1 = ps.executeUpdate();
         System.out.println("result = " + result);
 //        connection.rollback();
 //        Statement statement = connection.createStatement();
 //        int result1 = statement.executeUpdate(insertSql6);
 //        System.out.println("result1 = " + result1);
-//        connection.commit();
+        connection.commit();
         ps.close();
         connection.close();
     }
@@ -266,7 +265,7 @@ public class TestJDBC {
         Statement statement = connection.createStatement();
         ResultSet resultSet1 = statement.executeQuery(query1);
         while (resultSet1.next()) {
-            Boolean fieldBoolean = resultSet1.getBoolean("fieldBoolean");
+            String key1 = resultSet1.getString("key1");
         }
 //        ResultSet resultSet2 = statement.executeQuery(group2);
 //        while (resultSet2.next()) {

@@ -2,8 +2,10 @@ package org.elasticsearch.jdbc;
 
 import com.floragunn.searchguard.ssl.SearchGuardSSLPlugin;
 import jodd.util.StringUtil;
+import org.elasticsearch.action.bulk.BulkProcessor;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
+import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.settings.SecureString;
@@ -27,6 +29,7 @@ import java.net.UnknownHostException;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 
 public class QueryExecutor {
@@ -59,6 +62,19 @@ public class QueryExecutor {
 
         Action action = searchDao.explain(query);
         return action;
+    }
+
+    public void add(IndexAction action, BulkProcessor bulkProcessor) throws Exception {
+        bulkProcessor.add((IndexRequest) (action.explain().getBuilder()).request());
+//        if (action.explain().getBuilder() instanceof BulkRequestBuilder) {
+//            bulkProcessor.add((IndexRequest) (action.explain().getBuilder()).request());
+//        } else {
+//            action.explain().get();
+//        }
+    }
+
+    public void commit(BulkProcessor bulkProcessor) throws Exception {
+        bulkProcessor.flush();
     }
 
     public void add(IndexAction action, BulkRequestBuilder bulkRequestBuilder) throws Exception {

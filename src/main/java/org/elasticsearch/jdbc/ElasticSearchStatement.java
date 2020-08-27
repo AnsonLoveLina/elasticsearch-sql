@@ -66,7 +66,11 @@ public class ElasticSearchStatement implements Statement {
             return ((ElasticSearchResultSet)executeQuery(sql)).getNrRows();
         }
         IndexAction indexAction = (IndexAction) action;
-        DMLActions.add(indexAction);
+        try {
+            connection.add(indexAction);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return indexAction.getCount();
     }
 

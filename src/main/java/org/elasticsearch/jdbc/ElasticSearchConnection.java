@@ -1,8 +1,10 @@
 package org.elasticsearch.jdbc;
 
-import org.elasticsearch.action.bulk.BulkRequestBuilder;
+import com.ngw.BulkProcessorProxy;
+import org.elasticsearch.action.bulk.*;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.common.unit.TimeValue;
 import org.nlpcn.es4sql.Util;
 import org.nlpcn.es4sql.index.IndexAction;
 import org.nlpcn.es4sql.index.InsertAction;
@@ -10,6 +12,7 @@ import org.nlpcn.es4sql.index.InsertAction;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by allwefantasy on 8/30/16.
@@ -18,6 +21,8 @@ import java.util.concurrent.Executor;
 public class ElasticSearchConnection implements Connection {
 
     private BulkRequestBuilder bulkRequest;
+
+    private BulkProcessor bulkProcessor;
 
     private final QueryExecutor queryExecutor;
     private boolean autoCommit = false;
@@ -34,6 +39,7 @@ public class ElasticSearchConnection implements Connection {
         this.queryExecutor = queryExecutor;
         this.client = queryExecutor.getClient();
         this.bulkRequest = this.client.prepareBulk();
+        this.bulkProcessor = BulkProcessorProxy.getBulkprocessor(client);
     }
 
     public QueryExecutor getQueryExecutor() {
@@ -85,7 +91,8 @@ public class ElasticSearchConnection implements Connection {
     }
 
     protected void add(IndexAction dmlAction) throws Exception {
-        queryExecutor.add(dmlAction, bulkRequest);
+//        queryExecutor.add(dmlAction, bulkRequest);
+        queryExecutor.add(dmlAction, bulkProcessor);
     }
 
     @Override
@@ -94,15 +101,16 @@ public class ElasticSearchConnection implements Connection {
             return;
         }
         try {
-            for (ElasticSearchStatement st : this.statements) {
-                for (IndexAction dmlAction : st.getDMLActions()) {
-                    add(dmlAction);
-                }
-                st.getDMLActions().clear();
-            }
+//            for (ElasticSearchStatement st : this.statements) {
+//                for (IndexAction dmlAction : st.getDMLActions()) {
+//                    add(dmlAction);
+//                }
+//                st.getDMLActions().clear();
+//            }
 //            cleartatements();
-            queryExecutor.commit(bulkRequest);
-            bulkRequest = this.client.prepareBulk();
+//            queryExecutor.commit(bulkRequest);
+//            bulkRequest = this.client.prepareBulk();
+            queryExecutor.commit(bulkProcessor);
         } catch (Exception e) {
             throw new SQLException(e);
         }
@@ -121,6 +129,11 @@ public class ElasticSearchConnection implements Connection {
         for (ElasticSearchStatement st : this.statements) st.close();
         cleartatements();
         client.close();
+        try {
+            bulkProcessor.awaitClose(20, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            throw new SQLException(e);
+        }
     }
 
     @Override
