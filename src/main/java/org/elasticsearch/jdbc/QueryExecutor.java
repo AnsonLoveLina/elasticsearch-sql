@@ -2,6 +2,8 @@ package org.elasticsearch.jdbc;
 
 import com.floragunn.searchguard.ssl.SearchGuardSSLPlugin;
 import jodd.util.StringUtil;
+import org.elasticsearch.action.ActionRequest;
+import org.elasticsearch.action.ActionRequestBuilder;
 import org.elasticsearch.action.bulk.BulkProcessor;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -65,7 +67,12 @@ public class QueryExecutor {
     }
 
     public void add(IndexAction action, BulkProcessor bulkProcessor) throws Exception {
-        bulkProcessor.add((IndexRequest) (action.explain().getBuilder()).request());
+        ActionRequest actionRequest = action.explain().getBuilder().request();
+        if (actionRequest instanceof IndexAction) {
+            bulkProcessor.add((IndexRequest) (action.explain().getBuilder()).request());
+        } else {
+            action.explain().get();
+        }
 //        if (action.explain().getBuilder() instanceof BulkRequestBuilder) {
 //            bulkProcessor.add((IndexRequest) (action.explain().getBuilder()).request());
 //        } else {

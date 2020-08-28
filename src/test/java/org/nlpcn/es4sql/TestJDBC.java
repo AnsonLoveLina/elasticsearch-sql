@@ -81,9 +81,9 @@ public class TestJDBC {
         Connection connection = DriverManager.getConnection("jdbc:elasticsearch://127.0.0.1:9300?" + param);
 //        Connection connection = DriverManager.getConnection("jdbc:elasticsearch://localhost:9300","elastic","changeme");
         connection.setAutoCommit(false);
-        PreparedStatement ps = connection.prepareStatement("update /*! CONFLICTS(proceed) */t_dsmanager_data set DATACODE=?,ID=?");
-        ps.setString(1, "qq");
-        ps.setString(2, "ww");
+        PreparedStatement ps = connection.prepareStatement("delete FROM t_dsmanager_data where DATACODE=?,ID=?");
+        ps.setString(1, "涨是");
+        ps.setString(2, "XZXT.LASDS");
         int result = ps.executeUpdate();
         connection.commit();
 //        ps.setString(1,"涨\\\\是'");
