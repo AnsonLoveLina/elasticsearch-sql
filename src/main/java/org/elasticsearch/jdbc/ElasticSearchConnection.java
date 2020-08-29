@@ -90,9 +90,9 @@ public class ElasticSearchConnection implements Connection {
         return autoCommit;
     }
 
-    protected void add(IndexAction dmlAction) throws Exception {
+    protected int add(IndexAction dmlAction) throws Exception {
 //        queryExecutor.add(dmlAction, bulkRequest);
-        queryExecutor.add(dmlAction, bulkProcessor);
+        return queryExecutor.add(dmlAction, bulkProcessor);
     }
 
     @Override

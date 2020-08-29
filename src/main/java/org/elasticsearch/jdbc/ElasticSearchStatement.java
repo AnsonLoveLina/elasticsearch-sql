@@ -58,8 +58,7 @@ public class ElasticSearchStatement implements Statement {
         try {
             action = connection.getQueryExecutor().getAction(sql);
         } catch (Exception e) {
-            e.printStackTrace();
-            return 0;
+            throw new SQLException(e);
         }
         if (!(action instanceof IndexAction)) {
             this.connection.removeStatements(this);
@@ -67,11 +66,10 @@ public class ElasticSearchStatement implements Statement {
         }
         IndexAction indexAction = (IndexAction) action;
         try {
-            connection.add(indexAction);
+            return connection.add(indexAction);
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new SQLException(e);
         }
-        return indexAction.getCount();
     }
 
     @Override

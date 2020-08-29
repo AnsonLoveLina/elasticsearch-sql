@@ -4,15 +4,19 @@ import com.floragunn.searchguard.ssl.SearchGuardSSLPlugin;
 import jodd.util.StringUtil;
 import org.elasticsearch.action.ActionRequest;
 import org.elasticsearch.action.ActionRequestBuilder;
+import org.elasticsearch.action.ActionResponse;
 import org.elasticsearch.action.bulk.BulkProcessor;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexRequestBuilder;
+import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.settings.SecureString;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.TransportAddress;
+import org.elasticsearch.index.reindex.BulkByScrollResponse;
+import org.elasticsearch.index.reindex.UpdateByQueryRequest;
 import org.elasticsearch.plugin.nlpcn.QueryActionElasticExecutor;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.elasticsearch.xpack.client.PreBuiltXPackTransportClient;
@@ -66,12 +70,18 @@ public class QueryExecutor {
         return action;
     }
 
-    public void add(IndexAction action, BulkProcessor bulkProcessor) throws Exception {
+    public int add(IndexAction action, BulkProcessor bulkProcessor) throws Exception {
         ActionRequest actionRequest = action.explain().getBuilder().request();
-        if (actionRequest instanceof IndexAction) {
-            bulkProcessor.add((IndexRequest) (action.explain().getBuilder()).request());
+        if (actionRequest instanceof IndexRequest) {//新增
+            bulkProcessor.add((IndexRequest) actionRequest);
+            return action.getCount();
         } else {
-            action.explain().get();
+            BulkByScrollResponse actionResponse = (BulkByScrollResponse) action.explain().get();
+            if (actionRequest instanceof UpdateByQueryRequest || actionRequest instanceof UpdateRequest) {//修改
+                return Long.valueOf(actionResponse.getStatus().getUpdated()).intValue();
+            } else {//删除
+                return Long.valueOf(actionResponse.getStatus().getDeleted()).intValue();
+            }
         }
 //        if (action.explain().getBuilder() instanceof BulkRequestBuilder) {
 //            bulkProcessor.add((IndexRequest) (action.explain().getBuilder()).request());

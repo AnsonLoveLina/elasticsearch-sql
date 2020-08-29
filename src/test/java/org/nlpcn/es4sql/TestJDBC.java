@@ -76,7 +76,7 @@ public class TestJDBC {
     }
 
     @org.junit.Test
-    public void testUpdatePrepareStatement() throws Exception {
+    public void testDeletePrepareStatement() throws Exception {
         Class.forName("org.elasticsearch.jdbc.ElasticSearchDriver");
         Connection connection = DriverManager.getConnection("jdbc:elasticsearch://127.0.0.1:9300?" + param);
 //        Connection connection = DriverManager.getConnection("jdbc:elasticsearch://localhost:9300","elastic","changeme");
@@ -85,19 +85,51 @@ public class TestJDBC {
         ps.setString(1, "涨是");
         ps.setString(2, "XZXT.LASDS");
         int result = ps.executeUpdate();
-        connection.commit();
-//        ps.setString(1,"涨\\\\是'");
-//        ps.setString(2,null);
+//        connection.commit();
+        ps.setString(1,"sd'");
+        ps.setString(2,"vvv");
 //        ps.setString(3,"XZXT.LASDS");
 //        ps.setString(4,"1");
-//        int result1 = ps.executeUpdate();
-//        connection.commit();
+        int result1 = ps.executeUpdate();
+        connection.commit();
 //        ps.setString(1,"my_index_dyna222xx");
 //        ps.setString(2,"1");
 //        ps.setString(3,"1");
 //        ps.setString(4,null);
 //        int result1 = ps.executeUpdate();
         System.out.println("result = " + result);
+        System.out.println("result1 = " + result1);
+//        connection.rollback();
+//        Statement statement = connection.createStatement();
+//        int result1 = statement.executeUpdate(insertSql6);
+//        System.out.println("result1 = " + result1);
+//        connection.commit();
+        ps.close();
+        connection.close();
+    }
+
+    @org.junit.Test
+    public void testUpdatePrepareStatement() throws Exception {
+        Class.forName("org.elasticsearch.jdbc.ElasticSearchDriver");
+        Connection connection = DriverManager.getConnection("jdbc:elasticsearch://127.0.0.1:9300?" + param);
+//        Connection connection = DriverManager.getConnection("jdbc:elasticsearch://localhost:9300","elastic","changeme");
+        connection.setAutoCommit(false);
+        PreparedStatement ps = connection.prepareStatement("update t_dsmanager_data set DATACODE=?,ID=?");
+        ps.setString(1, "涨是");
+        ps.setString(2, "XZXT.LASDS");
+        int result = ps.executeUpdate();
+//        connection.commit();
+        ps.setString(1,"是");
+        ps.setString(2,"fff");
+        int result1 = ps.executeUpdate();
+        connection.commit();
+//        ps.setString(1,"my_index_dyna222xx");
+//        ps.setString(2,"1");
+//        ps.setString(3,"1");
+//        ps.setString(4,null);
+//        int result1 = ps.executeUpdate();
+        System.out.println("result = " + result);
+        System.out.println("result1 = " + result1);
 //        connection.rollback();
 //        Statement statement = connection.createStatement();
 //        int result1 = statement.executeUpdate(insertSql6);
@@ -125,6 +157,7 @@ public class TestJDBC {
         ps.setString(4,null);
         int result1 = ps.executeUpdate();
         System.out.println("result = " + result);
+        System.out.println("result1 = " + result1);
 //        connection.rollback();
 //        Statement statement = connection.createStatement();
 //        int result1 = statement.executeUpdate(insertSql6);
