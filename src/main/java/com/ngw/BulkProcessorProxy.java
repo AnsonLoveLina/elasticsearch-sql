@@ -5,6 +5,8 @@ import org.elasticsearch.action.bulk.BulkProcessor;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.common.unit.ByteSizeUnit;
+import org.elasticsearch.common.unit.ByteSizeValue;
 import org.elasticsearch.common.unit.TimeValue;
 
 /**
@@ -16,21 +18,21 @@ public class BulkProcessorProxy {
         return BulkProcessor.builder(client, new BulkProcessor.Listener() {
             @Override
             public void beforeBulk(long executionId, BulkRequest request) {
-                System.out.println("request");
+//                System.out.println("request");
             }
 
             @Override
             public void afterBulk(long executionId, BulkRequest request, BulkResponse response) {
-                System.out.println("response");
+//                System.out.println("response");
 
             }
 
             @Override
             public void afterBulk(long executionId, BulkRequest request, Throwable failure) {
-                System.out.println("failure" + failure);
+//                System.out.println("failure" + failure);
 
             }
-        }).setBulkActions(10000).setFlushInterval(TimeValue.timeValueSeconds(120)).setConcurrentRequests(5).setBackoffPolicy(
+        }).setBulkActions(5000).setFlushInterval(TimeValue.timeValueSeconds(60)).setBulkSize(new ByteSizeValue(1, ByteSizeUnit.GB)).setConcurrentRequests(3).setBackoffPolicy(
                 BackoffPolicy.exponentialBackoff(TimeValue.timeValueMillis(100), 3)).build();
     }
 }
