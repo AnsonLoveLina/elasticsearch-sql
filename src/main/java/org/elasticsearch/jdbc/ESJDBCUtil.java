@@ -18,32 +18,54 @@ public class ESJDBCUtil {
 
     /**
      * Returns the class associated with a java.sql.Types id
+     *
      * @param type
      * @return
      */
-    public static Class<?> getClassForTypeId(int type){
-        switch(type){
-            case Types.ARRAY : return Array.class;
-            case Types.BIGINT : return Long.class;
-            case Types.TINYINT : return Byte.class;
-            case Types.BINARY : return Byte[].class;
-            case Types.BIT : return Boolean.class;
-            case Types.BOOLEAN : return Boolean.class;
-            case Types.CHAR : return Character.class;
-            case Types.DATE : return java.util.Date.class;
-            case Types.DOUBLE : return Double.class;
-            case Types.FLOAT : return Float.class;
-            case Types.INTEGER : return Integer.class;
-            case Types.NUMERIC : return BigDecimal.class;
-            case Types.SMALLINT : return Short.class;
-            case Types.LONGVARCHAR : return String.class;
-            case Types.REAL : return Float.class;
-            case Types.VARCHAR : return String.class;
-            case Types.TIME : return Time.class;
-            case Types.TIMESTAMP : return Timestamp.class;
-            case Types.LONGVARBINARY : return Byte[].class;
-            case Types.VARBINARY : return Byte[].class;
-            default : return Object.class;
+    public static Class<?> getClassForTypeId(int type) {
+        switch (type) {
+            case Types.ARRAY:
+                return Array.class;
+            case Types.BIGINT:
+                return Long.class;
+            case Types.TINYINT:
+                return Byte.class;
+            case Types.BINARY:
+                return Byte[].class;
+            case Types.BIT:
+                return Boolean.class;
+            case Types.BOOLEAN:
+                return Boolean.class;
+            case Types.CHAR:
+                return Character.class;
+            case Types.DATE:
+                return java.util.Date.class;
+            case Types.DOUBLE:
+                return Double.class;
+            case Types.FLOAT:
+                return Float.class;
+            case Types.INTEGER:
+                return Integer.class;
+            case Types.NUMERIC:
+                return BigDecimal.class;
+            case Types.SMALLINT:
+                return Short.class;
+            case Types.LONGVARCHAR:
+                return String.class;
+            case Types.REAL:
+                return Float.class;
+            case Types.VARCHAR:
+                return String.class;
+            case Types.TIME:
+                return Time.class;
+            case Types.TIMESTAMP:
+                return Timestamp.class;
+            case Types.LONGVARBINARY:
+                return Byte[].class;
+            case Types.VARBINARY:
+                return Byte[].class;
+            default:
+                return Object.class;
         }
     }
 
@@ -78,14 +100,25 @@ public class ESJDBCUtil {
             return Types.TINYINT;
         if (c instanceof Byte[])
             return Types.VARBINARY;
-        if(c instanceof Object[])
+        if (c instanceof Object[])
             return Types.JAVA_OBJECT;
-        if(c instanceof Object)
+        if (c instanceof Object)
             return Types.JAVA_OBJECT;
         if (c instanceof Array)
             return Types.ARRAY;
         else
             return Types.OTHER;
+    }
+
+    public static void main(String[] strs) {
+        String url = "jdbc:elasticsearch://127.0.0.1:9300?xpack.security.user=xdh:ngw@2020&xpack.security.transport.ssl.enabled=true&xpack.security.transport.ssl.verification_mode=certificate&xpack.security.transport.ssl.keystore.path=/Users/zy-xx/Documents/学习/elasticSearch/6/elasticsearch/elastic-certificates.p12&xpack.security.transport.ssl.truststore.path=/Users/zy-xx/Documents/学习/elasticSearch/6/elasticsearch/elastic-certificates.p12";
+
+        String[] urlSplit = url.split("\\?");
+        if (urlSplit.length != 1) {
+            String endUrl = url.substring(urlSplit[0].length()).replaceAll("\\:", "%3A").replaceAll("\\\\", "%5C").replaceAll("\\/", "%2F");
+            url = url.substring(0, urlSplit[0].length()) + endUrl;
+        }
+        System.out.println("url = " + url);
     }
 
     /**
@@ -98,6 +131,11 @@ public class ESJDBCUtil {
      * @throws SQLException
      */
     public static Object[] parseURL(String url, Properties info) throws SQLException {
+        String[] urlSplit = url.split("\\?");
+        if (urlSplit.length != 1) {
+            String endUrl = url.substring(urlSplit[0].length()).replaceAll("\\:", "%3A").replaceAll("\\\\", "%5C").replaceAll("\\/", "%2F");
+            url = url.substring(0, urlSplit[0].length()) + endUrl;
+        }
         if (!acceptsURL(url)) throw new SQLException("Invalid url");
         List<URI> uris = new ArrayList<>();
         String conUrls = url.substring(21);
