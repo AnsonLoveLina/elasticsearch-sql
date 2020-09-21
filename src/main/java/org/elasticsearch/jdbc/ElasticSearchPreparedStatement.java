@@ -23,7 +23,7 @@ import java.util.Calendar;
 public class ElasticSearchPreparedStatement extends ElasticSearchStatement implements PreparedStatement {
 
     private Object[] sqlAndParams;
-    private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+    private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     private ElasticSearchConnection connection;
 
@@ -155,12 +155,12 @@ public class ElasticSearchPreparedStatement extends ElasticSearchStatement imple
 
     @Override
     public void setTime(int parameterIndex, Time x) throws SQLException {
-        this.sqlAndParams[(parameterIndex * 2) - 1] = x == null ? null : Long.valueOf(x.getTime());
+        setDate(parameterIndex, x == null ? null :new Date(x.getTime()));
     }
 
     @Override
     public void setTimestamp(int parameterIndex, Timestamp x) throws SQLException {
-        this.sqlAndParams[(parameterIndex * 2) - 1] = x == null ? null : Long.valueOf(x.getTime());
+        setDate(parameterIndex, x == null ? null :new Date(x.getTime()));
 
     }
 
