@@ -6,7 +6,7 @@
     <version>1.0-SNAPSHOT</version>
 
     <groupId>com.ngw</groupId>
-    <artifactId>elasticsearch-sql6.8.2</artifactId>
+    <artifactId>elasticsearch-sql6.7.1</artifactId>
     <packaging>jar</packaging>
 
 
@@ -16,7 +16,7 @@
         <java.version>1.8</java.version>
         <compiler.version>3.5.1</compiler.version>
         <jar.version>3.0.2</jar.version>
-        <elasticsearch.version>6.8.2</elasticsearch.version>
+        <elasticsearch.version>6.7.1</elasticsearch.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <runSuite>**/MainTestSuite.class</runSuite>
         <elasticsearch.plugin.name>sql</elasticsearch.plugin.name>
