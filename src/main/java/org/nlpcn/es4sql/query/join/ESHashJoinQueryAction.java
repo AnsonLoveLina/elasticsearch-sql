@@ -19,8 +19,8 @@ import java.util.Map;
  */
 public class ESHashJoinQueryAction extends ESJoinQueryAction {
 
-    public ESHashJoinQueryAction(Client client,JoinSelect joinSelect) {
-        super(client, joinSelect);
+    public ESHashJoinQueryAction(JoinSelect joinSelect) {
+        super(joinSelect);
     }
 
     @Override

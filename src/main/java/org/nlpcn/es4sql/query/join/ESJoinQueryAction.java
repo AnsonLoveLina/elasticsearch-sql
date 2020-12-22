@@ -21,8 +21,8 @@ public abstract class ESJoinQueryAction extends QueryAction {
 
     protected JoinSelect joinSelect;
 
-    public ESJoinQueryAction(Client client, JoinSelect joinSelect) {
-        super(client, null);
+    public ESJoinQueryAction(JoinSelect joinSelect) {
+        super(null);
         this.joinSelect = joinSelect;
     }
 
@@ -67,7 +67,7 @@ public abstract class ESJoinQueryAction extends QueryAction {
         List<Field> connectedFields = tableOnJoinSelect.getConnectedFields();
         addFieldsToSelectIfMissing(tableOnJoinSelect,connectedFields);
         requestBuilder.setOriginalSelect(tableOnJoinSelect);
-        DefaultQueryAction queryAction = new DefaultQueryAction(client,tableOnJoinSelect);
+        DefaultQueryAction queryAction = new DefaultQueryAction(tableOnJoinSelect);
         queryAction.explain();
         requestBuilder.setRequestBuilder(queryAction.getRequestBuilder());
         requestBuilder.setReturnedFields(tableOnJoinSelect.getSelectedFields());

@@ -6,6 +6,7 @@ import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.*;
 import org.nlpcn.es4sql.domain.*;
 import org.nlpcn.es4sql.domain.hints.Hint;
@@ -24,12 +25,12 @@ import java.util.List;
 public class DefaultQueryAction extends QueryAction {
 
     private final Select select;
-    private SearchRequestBuilder request;
+    private SearchRequest request;
 
     private List<String> fieldNames = new LinkedList<>();
 
-    public DefaultQueryAction(Client client, Select select) {
-        super(client, select);
+    public DefaultQueryAction(Select select) {
+        super(select);
         this.select = select;
     }
 
@@ -39,7 +40,7 @@ public class DefaultQueryAction extends QueryAction {
      * @param request
      * @throws SqlParseException
      */
-    public void intialize(SearchRequestBuilder request) throws SqlParseException {
+    public void intialize(SearchRequest request) throws SqlParseException {
         this.request = request;
     }
 
@@ -54,7 +55,7 @@ public class DefaultQueryAction extends QueryAction {
             }
         }
         if (scrollHint != null && scrollHint.getParams()[0] instanceof String) {
-            return new SqlElasticSearchRequestBuilder(new SearchScrollRequestBuilder(client, SearchScrollAction.INSTANCE, (String) scrollHint.getParams()[0]).setScroll(new TimeValue((Integer) scrollHint.getParams()[1])));
+            return new SqlElasticSearchRequestBuilder(new SearchScrollRequest((String) scrollHint.getParams()[0]).scroll(new TimeValue((Integer) scrollHint.getParams()[1])));
         }
 
 		/*
@@ -69,7 +70,8 @@ public class DefaultQueryAction extends QueryAction {
 							为了在本地调试、执行下文的那些代码获得es的dsl，所以就使用这行代码，暂时将上面哪一行注释掉，上线的时候记得替换掉
 		变量request是es搜索请求对象，调用的是es的api，SearchRequestBuilder是es的原生api
 		 */
-        this.request = new SearchRequestBuilder(client, SearchAction.INSTANCE);
+        this.request = new SearchRequest();
+        this.request.source(new SearchSourceBuilder());
         setIndicesAndTypes();
 
         //zhongshu-comment 将Select对象中封装的sql token信息转换并传到成员变量es搜索请求对象request中
@@ -82,10 +84,11 @@ public class DefaultQueryAction extends QueryAction {
         //
         if (scrollHint != null) {
             if (!select.isOrderdSelect())
-                request.addSort(FieldSortBuilder.DOC_FIELD_NAME, SortOrder.ASC);
-            request.setSize((Integer) scrollHint.getParams()[0]).setScroll(new TimeValue((Integer) scrollHint.getParams()[1]));
+                request.source().sort(FieldSortBuilder.DOC_FIELD_NAME, SortOrder.ASC);
+            request.source().size((Integer) scrollHint.getParams()[0]);
+            request.scroll(new TimeValue((Integer) scrollHint.getParams()[1]));
         } else {
-            request.setSearchType(SearchType.DFS_QUERY_THEN_FETCH);
+            request.searchType(SearchType.DFS_QUERY_THEN_FETCH);
         }
         updateRequestWithIndexAndRoutingOptions(select, request);
         updateRequestWithHighlight(select, request);
@@ -102,11 +105,11 @@ public class DefaultQueryAction extends QueryAction {
      * Set indices and types to the search request.
      */
     private void setIndicesAndTypes() {
-        request.setIndices(query.getIndexArr());
+        request.indices(query.getIndexArr());
 
         String[] typeArr = query.getTypeArr();
         if (typeArr != null) {
-            request.setTypes(typeArr);
+            request.types(typeArr);
         }
     }
 
@@ -157,7 +160,7 @@ public class DefaultQueryAction extends QueryAction {
                 }
             }
 
-            request.setFetchSource(
+            request.source().fetchSource(
                     includeFields.toArray(new String[includeFields.size()]),
                     excludeFields.toArray(new String[excludeFields.size()])
             );
@@ -175,11 +178,11 @@ public class DefaultQueryAction extends QueryAction {
         if (params.size() == 2) {
             String f = params.get(0).value.toString();
             fieldNames.add(f);
-            request.addScriptField(f, new Script(params.get(1).value.toString()));
+            request.source().scriptField(f, new Script(params.get(1).value.toString()));
         } else if (params.size() == 3) {
             String f = params.get(0).value.toString();
             fieldNames.add(f);
-            request.addScriptField(f,
+            request.source().scriptField(f,
                     new Script(
                             ScriptType.INLINE,
                             params.get(1).value.toString(),
@@ -201,7 +204,7 @@ public class DefaultQueryAction extends QueryAction {
     private void setWhere(Where where) throws SqlParseException {
         if (where != null) {
             BoolQueryBuilder boolQuery = QueryMaker.explan(where, this.select.isQuery);
-            request.setQuery(boolQuery);
+            request.source().query(boolQuery);
         }
     }
 
@@ -213,7 +216,7 @@ public class DefaultQueryAction extends QueryAction {
     private void setSorts(List<Order> orderBys) {
         for (Order order : orderBys) {
             if (order.getNestedPath() != null) {
-                request.addSort(SortBuilders.fieldSort(order.getName()).order(SortOrder.valueOf(order.getType())).setNestedSort(new NestedSortBuilder(order.getNestedPath())));
+                request.source().sort(SortBuilders.fieldSort(order.getName()).order(SortOrder.valueOf(order.getType())).setNestedSort(new NestedSortBuilder(order.getNestedPath())));
             } else if (order.getName().contains("script(")) { //zhongshu-comment 该分支是我后来加的，用于兼容order by case when那种情况
 
                 String scriptStr = order.getName().substring("script(".length(), order.getName().length() - 1);
@@ -221,9 +224,9 @@ public class DefaultQueryAction extends QueryAction {
                 ScriptSortBuilder scriptSortBuilder = SortBuilders.scriptSort(script, order.getScriptSortType());
 
                 scriptSortBuilder = scriptSortBuilder.order(SortOrder.valueOf(order.getType()));
-                request.addSort(scriptSortBuilder);
+                request.source().sort(scriptSortBuilder);
             } else {
-                request.addSort(
+                request.source().sort(
                         order.getName(),
                         SortOrder.valueOf(order.getType()));
             }
@@ -237,15 +240,16 @@ public class DefaultQueryAction extends QueryAction {
      * @param size number of documents to return.
      */
     private void setLimit(int from, int size) {
-        request.setFrom(from);
+        request.source().from(from);
 
         if (size > -1) {
-            request.setSize(size);
+            request.source().size(size);
         }
     }
 
     public SearchRequestBuilder getRequestBuilder() {
-        return request;
+//        return request;
+        return null;
     }
 
     public List<String> getFieldNames() {

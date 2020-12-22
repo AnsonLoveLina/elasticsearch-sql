@@ -48,22 +48,6 @@ public class Test {
 
     private static String updateSql4 = "update " + my_index + " set fieldBoolean=false,fieldDate='1990-01-01 12',fieldDouble=1.11,fieldGeoPoin='41.12,-71.34',fieldInteger=2,fieldKeyword='是的',fieldLong=2320909,fieldText='中华人民共和国'";
 
-
-    public static String sqlToEsQuery(String sql) throws Exception {
-        Map actions = new HashMap();
-        Settings settings = Settings.builder().build();
-
-        ThreadPool threadPool = new ThreadPool(settings);
-        Client client = new NodeClient(settings, threadPool);
-        SearchDao searchDao = new org.nlpcn.es4sql.SearchDao(client);
-        try {
-            SearchRequest searchRequest = (SearchRequest)searchDao.explain(sql).explain().request();
-            return searchDao.explain(sql).explain().explain();
-        } catch (Exception e) {
-            throw e;
-        }
-    }
-
     public static void main(String[] args) throws Exception {
         String sql = "SELECT u as u2,count(distinct(mid)) as count FROM panda_quality where ty='buffer' and day='20160816' and tm>1471312800.00 and tm<1471313100.00 and domain='http://pl10.live.panda.tv' group by u  order by count desc limit 5000";
 //        sql = "SELECT sum(num) as num2,newtype as nt  from  twitter2 group by nt  order by num2 ";

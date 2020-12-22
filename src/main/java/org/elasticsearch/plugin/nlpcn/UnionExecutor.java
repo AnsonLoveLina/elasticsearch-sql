@@ -2,6 +2,7 @@ package org.elasticsearch.plugin.nlpcn;
 
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.text.Text;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
@@ -22,10 +23,10 @@ public class UnionExecutor implements ElasticHitsExecutor {
 
     private MultiQueryRequestBuilder multiQueryBuilder;
     private SearchHits results;
-    private Client client;
+    private RestHighLevelClient client;
     private int currentId;
 
-    public UnionExecutor(Client client,MultiQueryRequestBuilder builder) {
+    public UnionExecutor(RestHighLevelClient client, MultiQueryRequestBuilder builder) {
         multiQueryBuilder = builder;
         client = client;
         currentId = 0;

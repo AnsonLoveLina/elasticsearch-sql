@@ -2,6 +2,7 @@ package org.nlpcn.es4sql.query;
 
 import com.google.common.collect.Lists;
 import org.elasticsearch.action.search.SearchAction;
+import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.client.Client;
@@ -13,6 +14,7 @@ import org.elasticsearch.search.aggregations.BucketOrder;
 import org.elasticsearch.search.aggregations.bucket.nested.NestedAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.nested.ReverseNestedAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.nlpcn.es4sql.domain.*;
 import org.nlpcn.es4sql.domain.hints.Hint;
@@ -32,17 +34,18 @@ public class AggregationQueryAction extends QueryAction {
 
     private final Select select;
     private AggMaker aggMaker = new AggMaker();
-    private SearchRequestBuilder request;
+    private SearchRequest request;
 
-    public AggregationQueryAction(Client client, Select select) {
-        super(client, select);
+    public AggregationQueryAction(Select select) {
+        super(select);
         this.select = select;
     }
 
     @Override
     public SqlElasticSearchRequestBuilder explain() throws SqlParseException {
 //        this.request = client.prepareSearch();//zhongshu-comment elastic6.1.1的写法
-        this.request = new SearchRequestBuilder(client, SearchAction.INSTANCE); //zhongshu-comment master的写法
+        this.request = new SearchRequest(); //zhongshu-comment master的写法
+        this.request.source(new SearchSourceBuilder());
 
         setIndicesAndTypes();
 
@@ -87,7 +90,7 @@ public class AggregationQueryAction extends QueryAction {
                         nestedBuilder.subAggregation(lastAgg);
                     }
 
-                    request.addAggregation(wrapNestedIfNeeded(nestedBuilder, field.isReverseNested()));
+                    request.source().aggregation(wrapNestedIfNeeded(nestedBuilder, field.isReverseNested()));
                 } else if (field.isChildren()) {
                     AggregationBuilder childrenBuilder = createChildrenAggregation(field);
 
@@ -97,9 +100,9 @@ public class AggregationQueryAction extends QueryAction {
                         childrenBuilder.subAggregation(lastAgg);
                     }
 
-                    request.addAggregation(childrenBuilder);
+                    request.source().aggregation(childrenBuilder);
                 } else {
-                    request.addAggregation(lastAgg);
+                    request.source().aggregation(lastAgg);
                 }
 
                 //zhongshu-comment 下标从1开始
@@ -191,7 +194,7 @@ public class AggregationQueryAction extends QueryAction {
                         case "KEY":
                             termsBuilder.order(BucketOrder.key(isASC(order)));
                             // add the sort to the request also so the results get sorted as well
-                            request.addSort(order.getName(), SortOrder.valueOf(order.getType()));
+                            request.source().sort(order.getName(), SortOrder.valueOf(order.getType()));
                             break;
                         case "FIELD":
                             termsBuilder.order(BucketOrder.aggregation(order.getName(), isASC(order)));
@@ -200,14 +203,14 @@ public class AggregationQueryAction extends QueryAction {
                             throw new SqlParseException(order.getName() + " can not to order");
                     }
                 } else {
-                    request.addSort(order.getName(), SortOrder.valueOf(order.getType()));
+                    request.source().sort(order.getName(), SortOrder.valueOf(order.getType()));
                 }
             }
         }
         //zhongshu-comment 这个要看一下
         setLimitFromHint(this.select.getHints());
 
-        request.setSearchType(SearchType.DEFAULT);
+        request.searchType(SearchType.DEFAULT);
         updateRequestWithIndexAndRoutingOptions(select, request);
         updateRequestWithHighlight(select, request);
         updateRequestWithCollapse(select, request);
@@ -384,11 +387,11 @@ public class AggregationQueryAction extends QueryAction {
                 }
             }
 
-            request.setFetchSource(includeFields.toArray(new String[includeFields.size()]), null);
+            request.source().fetchSource(includeFields.toArray(new String[includeFields.size()]), null);
         }
     }
 
-    private void explanFields(SearchRequestBuilder request, List<Field> fields, AggregationBuilder groupByAgg) throws SqlParseException {
+    private void explanFields(SearchRequest request, List<Field> fields, AggregationBuilder groupByAgg) throws SqlParseException {
         for (Field field : fields) {
 
             if (field instanceof MethodField) {
@@ -401,7 +404,7 @@ public class AggregationQueryAction extends QueryAction {
                     zhongshu-comment 将request传进去defaultQueryAction对象是为了调用setFields()中的这一行代码：request.setFetchSource(),
                                      给request设置include字段和exclude字段
                      */
-                    DefaultQueryAction defaultQueryAction = new DefaultQueryAction(client, select);
+                    DefaultQueryAction defaultQueryAction = new DefaultQueryAction(select);
                     defaultQueryAction.intialize(request);
                     List<Field> tempFields = Lists.newArrayList(field);
                     defaultQueryAction.setFields(tempFields);
@@ -418,7 +421,7 @@ public class AggregationQueryAction extends QueryAction {
                     groupByAgg.subAggregation(makeAgg);
                 } else {
                     //question 不懂为什么将一个null的agg加到request中，这应该是dsl语法问题，先不需要深究
-                    request.addAggregation(makeAgg);
+                    request.source().aggregation(makeAgg);
                 }
             } else if (field instanceof Field) {
 
@@ -440,7 +443,7 @@ public class AggregationQueryAction extends QueryAction {
     private void setWhere(Where where) throws SqlParseException {
         if (where != null) {
             QueryBuilder whereQuery = QueryMaker.explan(where,this.select.isQuery);
-            request.setQuery(whereQuery);
+            request.source().query(whereQuery);
         }
     }
 
@@ -449,11 +452,11 @@ public class AggregationQueryAction extends QueryAction {
      * Set indices and types to the search request.
      */
     private void setIndicesAndTypes() {
-        request.setIndices(query.getIndexArr());
+        request.indices(query.getIndexArr());
 
         String[] typeArr = query.getTypeArr();
         if (typeArr != null) {
-            request.setTypes(typeArr);
+            request.types(typeArr);
         }
     }
 
@@ -476,8 +479,8 @@ public class AggregationQueryAction extends QueryAction {
                 break;
             }
         }
-        request.setFrom(from);
-        request.setSize(size);
+        request.source().from(from);
+        request.source().size(size);
     }
 
     /**

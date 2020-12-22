@@ -3,6 +3,7 @@ package org.elasticsearch.plugin.nlpcn;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.text.Text;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.rest.BytesRestResponse;
@@ -69,7 +70,7 @@ public abstract class ElasticJoinExecutor implements ElasticHitsExecutor {
         return results;
     }
 
-    public static ElasticJoinExecutor createJoinExecutor(Client client, SqlElasticRequestBuilder requestBuilder){
+    public static ElasticJoinExecutor createJoinExecutor(RestHighLevelClient client, SqlElasticRequestBuilder requestBuilder){
         if(requestBuilder instanceof HashJoinElasticRequestBuilder) {
             HashJoinElasticRequestBuilder hashJoin = (HashJoinElasticRequestBuilder) requestBuilder;
             return new HashJoinElasticExecutor(client, hashJoin);
@@ -191,7 +192,7 @@ public abstract class ElasticJoinExecutor implements ElasticHitsExecutor {
         this.metaResults.updateTimeOut(searchResponse.isTimedOut());
     }
 
-    protected SearchResponse scrollOneTimeWithMax(Client client,TableInJoinRequestBuilder tableRequest) {
+    protected SearchResponse scrollOneTimeWithMax(TableInJoinRequestBuilder tableRequest) {
         SearchResponse responseWithHits;SearchRequestBuilder scrollRequest = tableRequest.getRequestBuilder()
                 .setScroll(new TimeValue(60000))
                 .setSize(MAX_RESULTS_ON_ONE_FETCH);

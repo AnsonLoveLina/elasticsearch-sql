@@ -7,14 +7,25 @@ import com.alibaba.druid.sql.ast.statement.SQLJoinTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLSelectQueryBlock;
 import com.alibaba.druid.sql.ast.statement.SQLTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLUnionQuery;
-import org.elasticsearch.client.Client;
+import org.apache.http.HttpHost;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.CredentialsProvider;
+import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
+import org.elasticsearch.action.admin.cluster.node.info.NodeInfo;
+import org.elasticsearch.client.*;
 import org.elasticsearch.client.node.NodeClient;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.transport.TransportAddress;
 import org.elasticsearch.threadpool.ThreadPool;
 import org.nlpcn.es4sql.domain.KVValue;
 import org.nlpcn.es4sql.exception.SqlParseException;
 import org.nlpcn.es4sql.query.SqlElasticRequestBuilder;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -75,18 +86,18 @@ public class Util {
     public static final String PROP_CLIENT_TRANSPORT_IGNORE = "client.transport.ignore_cluster_name";
 
 
-    public static String getLoggingInfo(){
+    public static String getLoggingInfo() {
         StackTraceElement element = Thread.currentThread().getStackTrace()[2];
-        return element.getClassName()+"."+element.getMethodName()+" ["+element.getLineNumber()+"]";
+        return element.getClassName() + "." + element.getMethodName() + " [" + element.getLineNumber() + "]";
     }
 
-    public static List<Object> clone(List<Object> list){
+    public static List<Object> clone(List<Object> list) {
         List<Object> copy = new ArrayList<Object>(list.size());
-        for(Object o : list) copy.add(o);
+        for (Object o : list) copy.add(o);
         return copy;
     }
 
-    public static Properties defaultProps(){
+    public static Properties defaultProps() {
         Properties defaults = new Properties();
         defaults.put(PROP_CLIENT_TRANSPORT_IGNORE, CLIENT_TRANSPORT_IGNORE);
         return defaults;
@@ -94,13 +105,14 @@ public class Util {
 
     /**
      * Retrieves the integer property with given name from the properties
+     *
      * @param props
      * @param name
      * @param def
      * @return
      */
-    public static int getIntProp(Properties props, String name, int def){
-        if(!props.containsKey(name)) return def;
+    public static int getIntProp(Properties props, String name, int def) {
+        if (!props.containsKey(name)) return def;
         try {
             return Integer.parseInt(props.getProperty(name));
         } catch (Exception e) {
@@ -111,16 +123,17 @@ public class Util {
 
     /**
      * Retrieves the integer property with given name from the properties
+     *
      * @param props
      * @param name
      * @param def
      * @return
      */
-    public static boolean getBooleanProp(Properties props, String name, boolean def){
-        if(!props.containsKey(name)) return def;
-        if(props.get(name).toString().length() < 3) return true;
+    public static boolean getBooleanProp(Properties props, String name, boolean def) {
+        if (!props.containsKey(name)) return def;
+        if (props.get(name).toString().length() < 3) return true;
         try {
-            return Boolean.parseBoolean( props.getProperty(name) );
+            return Boolean.parseBoolean(props.getProperty(name));
         } catch (Exception e) {
             return def;
         }
@@ -132,19 +145,46 @@ public class Util {
     }
 
     public static void sleep(int millis) {
-        try{
+        try {
             Thread.sleep(millis);
-        }catch(Exception e){}
+        } catch (Exception e) {
+        }
     }
 
 
     public static SqlElasticRequestBuilder sqlToEsQuery(String sql) throws Exception {
         Map actions = new HashMap();
         Settings settings = Settings.builder().build();
-
         ThreadPool threadPool = new ThreadPool(settings);
         Client client = new NodeClient(settings, threadPool);
-        SearchDao searchDao = new org.nlpcn.es4sql.SearchDao(client);
+        List<NodeInfo> nodeInfos = client.admin().cluster().prepareNodesInfo().get().getNodes();
+        String user = settings.get("user");
+        String password = settings.get("password");
+
+        final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+        credentialsProvider.setCredentials(AuthScope.ANY,
+                new UsernamePasswordCredentials(user, password));
+        HttpHost[] httpHosts = new HttpHost[nodeInfos.size()];
+        for (int i = 0; i < nodeInfos.size(); ++i) {
+            httpHosts[i] = new HttpHost(InetAddress.getByName(nodeInfos.get(i).getTransport().getAddress().publishAddress().getAddress()), nodeInfos.get(i).getTransport().getAddress().publishAddress().getPort(), "http");
+        }
+
+        RestClientBuilder restClientBuilder = RestClient.builder(httpHosts)
+                .setHttpClientConfigCallback(new RestClientBuilder.HttpClientConfigCallback() {
+                    @Override
+                    public HttpAsyncClientBuilder customizeHttpClient(HttpAsyncClientBuilder httpClientBuilder) {
+                        return httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
+                    }
+                }).setFailureListener(new RestClient.FailureListener() {
+
+                    @Override
+                    public void onFailure(Node node) {
+                        System.out.println("node = " + node);
+                    }
+                });
+
+        RestHighLevelClient restHighLevelClient = new RestHighLevelClient(restClientBuilder);
+        SearchDao searchDao = new org.nlpcn.es4sql.SearchDao(restHighLevelClient);
         try {
             return searchDao.explain(sql).explain();
         } catch (Exception e) {
@@ -228,7 +268,7 @@ public class Util {
     public static Object getScriptValueWithQuote(SQLExpr expr, String quote) throws SqlParseException {
         if (expr instanceof SQLIdentifierExpr || expr instanceof SQLPropertyExpr || expr instanceof SQLVariantRefExpr) {
             return "doc['" + expr.toString() + "'].value";
-        }  else if (expr instanceof SQLCharExpr) {
+        } else if (expr instanceof SQLCharExpr) {
             return quote + ((SQLCharExpr) expr).getValue() + quote;
         } else if (expr instanceof SQLIntegerExpr) {
             return ((SQLIntegerExpr) expr).getValue();
@@ -236,7 +276,7 @@ public class Util {
             return ((SQLNumericLiteralExpr) expr).getNumber();
         } else if (expr instanceof SQLNullExpr) {
             return ((SQLNullExpr) expr).toString().toLowerCase();
-        } else if (expr instanceof  SQLBinaryOpExpr) {
+        } else if (expr instanceof SQLBinaryOpExpr) {
             //zhongshu-comment 该分支由忠树添加
             String left = "doc['" + ((SQLBinaryOpExpr) expr).getLeft().toString() + "'].value";
             String operator = ((SQLBinaryOpExpr) expr).getOperator().getName();
@@ -306,43 +346,43 @@ public class Util {
     }
 
     public static Object searchPathInMap(Map<String, Object> fieldsMap, String[] path) {
-        Map<String,Object> currentObject = fieldsMap;
-        for(int i=0;i<path.length-1 ;i++){
+        Map<String, Object> currentObject = fieldsMap;
+        for (int i = 0; i < path.length - 1; i++) {
             Object valueFromCurrentMap = currentObject.get(path[i]);
-            if(valueFromCurrentMap == null) return null;
-            if(!Map.class.isAssignableFrom(valueFromCurrentMap.getClass())) return null;
+            if (valueFromCurrentMap == null) return null;
+            if (!Map.class.isAssignableFrom(valueFromCurrentMap.getClass())) return null;
             currentObject = (Map<String, Object>) valueFromCurrentMap;
         }
-        return currentObject.get(path[path.length-1]);
+        return currentObject.get(path[path.length - 1]);
     }
 
-    public static Object deepSearchInMap(Map<String,Object> fieldsMap , String field){
-        if(field.contains(".")){
+    public static Object deepSearchInMap(Map<String, Object> fieldsMap, String field) {
+        if (field.contains(".")) {
             String[] split = field.split("\\.");
-            return searchPathInMap(fieldsMap,split);
+            return searchPathInMap(fieldsMap, split);
         }
         return fieldsMap.get(field);
     }
 
     public static boolean clearEmptyPaths(Map<String, Object> map) {
-        if(map.size() == 0){
+        if (map.size() == 0) {
             return true;
         }
         Set<String> keysToDelete = new HashSet<>();
-        for (Map.Entry<String,Object> entry : map.entrySet()){
+        for (Map.Entry<String, Object> entry : map.entrySet()) {
             Object value = entry.getValue();
-            if(Map.class.isAssignableFrom(value.getClass())){
-                if(clearEmptyPaths((Map<String, Object>) value)){
+            if (Map.class.isAssignableFrom(value.getClass())) {
+                if (clearEmptyPaths((Map<String, Object>) value)) {
                     keysToDelete.add(entry.getKey());
                 }
             }
         }
-        if(keysToDelete.size() != 0){
-            if(map.size() == keysToDelete.size()){
+        if (keysToDelete.size() != 0) {
+            if (map.size() == keysToDelete.size()) {
                 map.clear();
                 return true;
             }
-            for(String key : keysToDelete){
+            for (String key : keysToDelete) {
                 map.remove(key);
                 return false;
             }

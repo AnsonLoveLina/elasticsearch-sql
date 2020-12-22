@@ -18,8 +18,8 @@ import java.util.Set;
  */
 public class MultiQueryAction extends QueryAction {
     private MultiQuerySelect multiQuerySelect;
-    public MultiQueryAction(Client client, MultiQuerySelect multiSelect) {
-        super(client, null);
+    public MultiQueryAction(MultiQuerySelect multiSelect) {
+        super(null);
         this.multiQuerySelect = multiSelect;
     }
 
@@ -69,7 +69,7 @@ public class MultiQueryAction extends QueryAction {
     }
 
     protected SearchRequestBuilder createRequestBuilder(Select select) throws SqlParseException {
-        DefaultQueryAction queryAction = new DefaultQueryAction(client,select);
+        DefaultQueryAction queryAction = new DefaultQueryAction(select);
         queryAction.explain();
         return queryAction.getRequestBuilder();
     }

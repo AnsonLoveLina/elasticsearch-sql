@@ -1,5 +1,6 @@
 package org.nlpcn.es4sql.index;
 
+import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.client.Client;
 import org.nlpcn.es4sql.domain.Insert;
@@ -12,19 +13,17 @@ import org.nlpcn.es4sql.query.SqlElasticRequestBuilder;
  * update by query和delete by query不算在index中，所以只有insert对于ES而言是insertOrUpdate
  */
 public class InsertAction implements IndexAction, Action {
-    private Client client;
     private Insert insert;
-    private IndexRequestBuilder request;
+    private IndexRequest request;
 
-    public InsertAction(Client client, Insert insert) {
-        this.client = client;
+    public InsertAction(Insert insert) {
         this.insert = insert;
     }
 
     @Override
     public SqlElasticRequestBuilder explain() throws SqlParseException {
 
-        this.request = client.prepareIndex(insert.getIndex(), insert.getType(), insert.getId());
+        this.request = new IndexRequest(insert.getIndex(), insert.getType(), insert.getId());
 
         setValues();
 
@@ -37,7 +36,7 @@ public class InsertAction implements IndexAction, Action {
     }
 
     private void setValues() {
-        this.request.setSource(insert.getValues());
+        this.request.source(insert.getValues());
     }
 
     @Override

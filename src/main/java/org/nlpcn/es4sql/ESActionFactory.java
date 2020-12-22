@@ -10,8 +10,10 @@ import com.alibaba.druid.sql.parser.ParserException;
 import com.alibaba.druid.sql.parser.SQLExprParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
 import com.alibaba.druid.sql.parser.Token;
+import org.elasticsearch.action.ActionResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.plugin.nlpcn.ElasticResultHandler;
 import org.elasticsearch.plugin.nlpcn.QueryActionElasticExecutor;
 import org.elasticsearch.search.SearchHit;
@@ -41,7 +43,7 @@ public class ESActionFactory {
      * @param sql The SQL query.
      * @return Query object.
      */
-    public static Action create(Client client, String sql) throws SqlParseException, SQLFeatureNotSupportedException {
+    public static Action create(RestHighLevelClient client, String sql) throws SqlParseException, SQLFeatureNotSupportedException {
         sql = sql.replaceAll("\n", " ");
         String firstWord = sql.substring(0, sql.indexOf(' '));
         switch (firstWord.toUpperCase()) {
@@ -52,37 +54,37 @@ public class ESActionFactory {
                     MultiQuerySelect multiSelect = new SqlParser().parseMultiSelect((SQLUnionQuery) sqlExpr.getSubQuery().getQuery());
                     handleSubQueries(client, multiSelect.getFirstSelect());
                     handleSubQueries(client, multiSelect.getSecondSelect());
-                    return new MultiQueryAction(client, multiSelect);
+                    return new MultiQueryAction(multiSelect);
                 } else if (isJoin(sqlExpr, sql)) {//zhongshu-comment join连接查询
                     JoinSelect joinSelect = new SqlParser().parseJoinSelect(sqlExpr);
                     handleSubQueries(client, joinSelect.getFirstTable());
                     handleSubQueries(client, joinSelect.getSecondTable());
-                    return ESJoinQueryActionFactory.createJoinAction(client, joinSelect);
+                    return ESJoinQueryActionFactory.createJoinAction(joinSelect);
                 } else {
                     //zhongshu-comment 大部分查询都是走这个分支，先看懂这个分支
                     Select select = new SqlParser().parseSelect(sqlExpr);
                     //todo 看不懂，测试了好几个常见的sql，都没有进去handleSubQueries该方法，那就先不理了，看别的
                     handleSubQueries(client, select);
-                    return handleSelect(client, select);
+                    return handleSelect(select);
                 }
             case "DELETE":
                 SQLStatementParser deleteParser = createSqlStatementParser(sql);
                 SQLDeleteStatement deleteStatement = deleteParser.parseDeleteStatement();
                 Delete delete = new SqlParser().parseDelete(deleteStatement);
-                return new DeleteQueryAction(client, delete);
+                return new DeleteQueryAction(delete);
             case "SHOW":
-                return new ShowQueryAction(client, sql);
+                return new ShowQueryAction(sql);
             case "INSERT":
                 SQLStatementParser insertParser = createSqlStatementParser(sql);
                 SQLStatement insertStatement = insertParser.parseInsert();
                 Insert insert = new SqlParser().parseInsert((SQLInsertStatement) insertStatement);
-                return new InsertAction(client, insert);
+                return new InsertAction(insert);
 //                return null;
             case "UPDATE":
                 SQLStatementParser updateParser = createSqlStatementParser(sql);
                 SQLUpdateStatement updateStatement = updateParser.parseUpdateStatement();
                 Update update = new SqlParser().parseUpdate(updateStatement);
-                return new UpdateQueryAction(client, update);
+                return new UpdateQueryAction(update);
             default:
                 throw new SQLFeatureNotSupportedException(String.format("Unsupported query: %s", sql));
         }
@@ -92,16 +94,16 @@ public class ESActionFactory {
         return sqlExpr.getSubQuery().getQuery() instanceof SQLUnionQuery;
     }
 
-    private static void handleSubQueries(Client client, Select select) throws SqlParseException {
+    private static void handleSubQueries(RestHighLevelClient client, Select select) throws SqlParseException {
         if (select.containsSubQueries()) {
             for (SubQueryExpression subQueryExpression : select.getSubQueries()) {
-                QueryAction queryAction = handleSelect(client, subQueryExpression.getSelect());
+                QueryAction queryAction = handleSelect(subQueryExpression.getSelect());
                 executeAndFillSubQuery(client, subQueryExpression, queryAction);
             }
         }
     }
 
-    private static void executeAndFillSubQuery(Client client, SubQueryExpression subQueryExpression, QueryAction queryAction) throws SqlParseException {
+    private static void executeAndFillSubQuery(RestHighLevelClient client, SubQueryExpression subQueryExpression, QueryAction queryAction) throws SqlParseException {
         List<Object> values = new ArrayList<>();
         Object queryResult;
         try {
@@ -127,11 +129,11 @@ public class ESActionFactory {
         subQueryExpression.setValues(values.toArray());
     }
 
-    private static QueryAction handleSelect(Client client, Select select) {
+    private static QueryAction handleSelect( Select select) {
         if (select.isAgg) {
-            return new AggregationQueryAction(client, select);
+            return new AggregationQueryAction(select);
         } else {
-            return new DefaultQueryAction(client, select);
+            return new DefaultQueryAction(select);
         }
     }
 

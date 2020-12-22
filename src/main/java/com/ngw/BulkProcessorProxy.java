@@ -5,6 +5,8 @@ import org.elasticsearch.action.bulk.BulkProcessor;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.unit.ByteSizeUnit;
 import org.elasticsearch.common.unit.ByteSizeValue;
 import org.elasticsearch.common.unit.TimeValue;
@@ -13,9 +15,9 @@ import org.elasticsearch.common.unit.TimeValue;
  * Created by zy-xx on 2020/8/27.
  */
 public class BulkProcessorProxy {
-    public static BulkProcessor getBulkprocessor(Client client) {
+    public static BulkProcessor getBulkprocessor(RestHighLevelClient client) {
 
-        return BulkProcessor.builder(client, new BulkProcessor.Listener() {
+        return BulkProcessor.builder((request, bulkListener) -> client.bulkAsync(request, RequestOptions.DEFAULT, bulkListener), new BulkProcessor.Listener() {
             @Override
             public void beforeBulk(long executionId, BulkRequest request) {
 //                System.out.println("request");

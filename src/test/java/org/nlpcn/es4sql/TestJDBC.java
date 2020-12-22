@@ -38,7 +38,7 @@ public class TestJDBC {
 
     private static String insertSql6 = "INSERT INTO t_dsmanager_datafff (DATACODE, DATAROLELEVEL, ID, DATAISRELATION) VALUES ( ?,  ?,  ?,  ?)";
 
-    private static String insertSql7 = "insert into " + my_index + "(fieldBoolean,fieldDate,fieldDouble,fieldGeoPoin,fieldInteger,fieldKeyword,fieldLong,fieldText) values(true,'1990-01-01',11.1,'41.12,-71.34',1,'是的',123213,'中华人民共和国')";
+    private static String insertSql7 = "insert into my_index1(fieldBoolean,fieldDate,fieldDouble,fieldGeoPoin,fieldInteger,fieldKeyword,fieldLong,fieldText) values(true,'1990-01-01',11.1,'41.12,-71.34',1,'是的',123213,'中华人民共和国')";
 
     private static String updateSql1 = "update " + my_index + " set fieldDate='1990-01-01 12',fieldText='中华人民共和国'";
 
@@ -68,68 +68,77 @@ public class TestJDBC {
     public void test() throws Exception {
 
 //        System.out.println("sql" + insertSql5 + ":\n----------\n" + Util.sqlToEsQuery(query1));
-        testInsertStatement();
+        testDeletePrepareStatement();
+//        testInsertStatement();
         testInsertPrepareStatement();
-        testUpdatePrepareStatement();
-        testQueryStatement();
-        testQueryPrepareStatement();
+//        testUpdatePrepareStatement();
+//        testQueryStatement();
+//        testQueryPrepareStatement();
     }
 
     @org.junit.Test
     public void testDeletePrepareStatement() throws Exception {
         Class.forName("org.elasticsearch.jdbc.ElasticSearchDriver");
-        Connection connection = DriverManager.getConnection("jdbc:elasticsearch://127.0.0.1:9300?" + param);
+        Connection connection = DriverManager.getConnection("jdbc:elasticsearch://127.0.0.1:9200","elastic","xx198742");
 //        Connection connection = DriverManager.getConnection("jdbc:elasticsearch://localhost:9300","elastic","changeme");
         connection.setAutoCommit(false);
         PreparedStatement ps = connection.prepareStatement("delete FROM t_dsmanager_data where DATACODE=?,ID=?");
         ps.setString(1, "涨是");
         ps.setString(2, "XZXT.LASDS");
         int result = ps.executeUpdate();
+        System.out.println("result = " + result);
 //        connection.commit();
         ps.setString(1,"sd'");
         ps.setString(2,"vvv");
 //        ps.setString(3,"XZXT.LASDS");
 //        ps.setString(4,"1");
         int result1 = ps.executeUpdate();
+        System.out.println("result1 = " + result1);
+        ps.close();
+        PreparedStatement ps1 = connection.prepareStatement("INSERT INTO t_dsmanager_data (DATACODE, DATAROLELEVEL, ID, DATAISRELATION,DATADATE) VALUES ( ?,  ?,  ?,  ?,?)");
+        ps1.setString(1, "涨\\\\是'");
+        ps1.setString(2, null);
+        ps1.setString(3, "XZXT.LASDS");
+        ps1.setString(4, "1");
+        ps1.setTimestamp(5, new Timestamp(System.currentTimeMillis()));
+        int result2 = ps1.executeUpdate();
+        System.out.println("result2 = " + result2);
         connection.commit();
 //        ps.setString(1,"my_index_dyna222xx");
 //        ps.setString(2,"1");
 //        ps.setString(3,"1");
 //        ps.setString(4,null);
 //        int result1 = ps.executeUpdate();
-        System.out.println("result = " + result);
-        System.out.println("result1 = " + result1);
 //        connection.rollback();
 //        Statement statement = connection.createStatement();
 //        int result1 = statement.executeUpdate(insertSql6);
 //        System.out.println("result1 = " + result1);
 //        connection.commit();
-        ps.close();
         connection.close();
     }
 
     @org.junit.Test
     public void testUpdatePrepareStatement() throws Exception {
         Class.forName("org.elasticsearch.jdbc.ElasticSearchDriver");
-        Connection connection = DriverManager.getConnection("jdbc:elasticsearch://127.0.0.1:9300?" + param);
+        Connection connection = DriverManager.getConnection("jdbc:elasticsearch://127.0.0.1:9200","elastic","xx198742");
 //        Connection connection = DriverManager.getConnection("jdbc:elasticsearch://localhost:9300","elastic","changeme");
         connection.setAutoCommit(false);
         PreparedStatement ps = connection.prepareStatement("update t_dsmanager_data set DATACODE=?,ID=?");
         ps.setString(1, "涨是");
         ps.setString(2, "XZXT.LASDS");
         int result = ps.executeUpdate();
+        System.out.println("result = " + result);
 //        connection.commit();
         ps.setString(1,"是");
         ps.setString(2,"fff");
         int result1 = ps.executeUpdate();
+        System.out.println("result1 = " + result1);
         connection.commit();
 //        ps.setString(1,"my_index_dyna222xx");
 //        ps.setString(2,"1");
 //        ps.setString(3,"1");
 //        ps.setString(4,null);
 //        int result1 = ps.executeUpdate();
-        System.out.println("result = " + result);
-        System.out.println("result1 = " + result1);
 //        connection.rollback();
 //        Statement statement = connection.createStatement();
 //        int result1 = statement.executeUpdate(insertSql6);
@@ -142,7 +151,7 @@ public class TestJDBC {
     @org.junit.Test
     public void testInsertPrepareStatement() throws Exception {
         Class.forName("org.elasticsearch.jdbc.ElasticSearchDriver");
-        Connection connection = DriverManager.getConnection("jdbc:elasticsearch://127.0.0.1:9300?" + param);
+        Connection connection = DriverManager.getConnection("jdbc:elasticsearch://127.0.0.1:9200","elastic","xx198742");
 //        Connection connection = DriverManager.getConnection("jdbc:elasticsearch://localhost:9300","elastic","changeme");
         connection.setAutoCommit(false);
         PreparedStatement ps = connection.prepareStatement("INSERT INTO t_dsmanager_data (DATACODE, DATAROLELEVEL, ID, DATAISRELATION,DATADATE) VALUES ( ?,  ?,  ?,  ?,?)");
@@ -172,11 +181,11 @@ public class TestJDBC {
     @org.junit.Test
     public void testInsertStatement() throws Exception {
         Class.forName("org.elasticsearch.jdbc.ElasticSearchDriver");
-        Connection connection = DriverManager.getConnection("jdbc:elasticsearch://127.0.0.1:9300?" + param);
+        Connection connection = DriverManager.getConnection("jdbc:elasticsearch://127.0.0.1:9200","elastic","xx198742");
 //        Connection connection = DriverManager.getConnection("jdbc:elasticsearch://localhost:9300","elastic","changeme");
         connection.setAutoCommit(false);
         Statement statement = connection.createStatement();
-        int result = statement.executeUpdate(insertSql6);
+        int result = statement.executeUpdate(insertSql7);
         System.out.println("result = " + result);
         connection.commit();
         statement.close();
@@ -196,7 +205,7 @@ public class TestJDBC {
     @org.junit.Test
     public void testGroupStatement() throws Exception {
         Class.forName("org.elasticsearch.jdbc.ElasticSearchDriver");
-        Connection connection = DriverManager.getConnection("jdbc:elasticsearch://127.0.0.1:9300?" + param);
+        Connection connection = DriverManager.getConnection("jdbc:elasticsearch://127.0.0.1:9200","elastic","xx198742");
 //        Connection connection = DriverManager.getConnection("jdbc:elasticsearch://localhost:9300","elastic","changeme");
         Statement statement = connection.createStatement();
         ResultSet resultSet = statement.executeQuery("SELECT * from  my_index group by key2");
@@ -225,7 +234,7 @@ public class TestJDBC {
     @org.junit.Test
     public void testGroupStatement1() throws Exception {
         Class.forName("org.elasticsearch.jdbc.ElasticSearchDriver");
-        Connection connection = DriverManager.getConnection("jdbc:elasticsearch://127.0.0.1:9300?" + param);
+        Connection connection = DriverManager.getConnection("jdbc:elasticsearch://127.0.0.1:9200","elastic","xx198742");
 //        Connection connection = DriverManager.getConnection("jdbc:elasticsearch://localhost:9300","elastic","changeme");
         Statement statement = connection.createStatement();
         ResultSet resultSet = statement.executeQuery("SELECT * from  my_index group by key2,key3");
@@ -260,7 +269,7 @@ public class TestJDBC {
     @org.junit.Test
     public void testGroupStatement2() throws Exception {
         Class.forName("org.elasticsearch.jdbc.ElasticSearchDriver");
-        Connection connection = DriverManager.getConnection("jdbc:elasticsearch://127.0.0.1:9300?" + param);
+        Connection connection = DriverManager.getConnection("jdbc:elasticsearch://127.0.0.1:9200","elastic","xx198742");
 //        Connection connection = DriverManager.getConnection("jdbc:elasticsearch://localhost:9300","elastic","changeme");
         Statement statement = connection.createStatement();
         ResultSet resultSet = statement.executeQuery("SELECT * from  my_index group by (key2),(key3)");
@@ -295,12 +304,13 @@ public class TestJDBC {
     @org.junit.Test
     public void testQueryStatement() throws Exception {
         Class.forName("org.elasticsearch.jdbc.ElasticSearchDriver");
-        Connection connection = DriverManager.getConnection("jdbc:elasticsearch://127.0.0.1:9300?" + param);
+        Connection connection = DriverManager.getConnection("jdbc:elasticsearch://127.0.0.1:9200","elastic","xx198742");
 //        Connection connection = DriverManager.getConnection("jdbc:elasticsearch://localhost:9300","elastic","changeme");
         Statement statement = connection.createStatement();
         ResultSet resultSet1 = statement.executeQuery(query1);
         while (resultSet1.next()) {
             String key1 = resultSet1.getString("key1");
+            System.out.println("key1 = " + key1);
         }
 //        ResultSet resultSet2 = statement.executeQuery(group2);
 //        while (resultSet2.next()) {
@@ -319,13 +329,12 @@ public class TestJDBC {
     @org.junit.Test
     public void testQueryPrepareStatement() throws Exception {
         Class.forName("org.elasticsearch.jdbc.ElasticSearchDriver");
-        Connection connection = DriverManager.getConnection("jdbc:elasticsearch://127.0.0.1:9300?" + param);
-        PreparedStatement ps = connection.prepareStatement(query2);
+        Connection connection = DriverManager.getConnection("jdbc:elasticsearch://127.0.0.1:9200","elastic","xx198742");
+        PreparedStatement ps = connection.prepareStatement("SELECT * from  my_index1");
         ResultSet resultSet = ps.executeQuery();
-        List<String> result = new ArrayList<String>();
         while (resultSet.next()) {
-            System.out.println(resultSet.getObject("key2"));
-            System.out.println(resultSet.getString("key1"));
+            System.out.println(resultSet.getObject("fieldLong"));
+            System.out.println(resultSet.getString("fieldText"));
         }
         ps.close();
         connection.close();

@@ -1,5 +1,8 @@
 package org.nlpcn.es4sql.jdbc;
 
+import com.google.common.collect.Lists;
+
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -20,5 +23,9 @@ public class ObjectResult {
 
     public List<List<Object>> getLines() {
         return lines;
+    }
+
+    public static ObjectResult emptyObjectResult(){
+        return new ObjectResult(Lists.newArrayList(),Lists.newArrayList(Lists.newArrayList()));
     }
 }

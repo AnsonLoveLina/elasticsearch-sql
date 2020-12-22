@@ -23,7 +23,7 @@ import java.util.HashMap;
  */
 public class ElasticUtils {
 
-    public static SearchResponse scrollOneTimeWithHits(Client client, SearchRequestBuilder requestBuilder, Select originalSelect, int resultSize) {
+    public static SearchResponse scrollOneTimeWithHits(SearchRequestBuilder requestBuilder, Select originalSelect, int resultSize) {
         SearchResponse responseWithHits;SearchRequestBuilder scrollRequest = requestBuilder
                 .setScroll(new TimeValue(60000))
                 .setSize(resultSize);

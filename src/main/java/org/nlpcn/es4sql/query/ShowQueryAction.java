@@ -6,6 +6,7 @@ import org.elasticsearch.action.ActionResponse;
 import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
 import org.elasticsearch.action.admin.indices.get.GetIndexRequestBuilder;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.nlpcn.es4sql.exception.SqlParseException;
 
 /**
@@ -13,8 +14,8 @@ import org.nlpcn.es4sql.exception.SqlParseException;
  */
 public class ShowQueryAction extends QueryAction {
     private String sql;
-    public ShowQueryAction(Client client, String sql) {
-        super(client,null);
+    public ShowQueryAction(String sql) {
+        super(null);
         this.sql = sql;
     }
 
@@ -23,7 +24,7 @@ public class ShowQueryAction extends QueryAction {
         String sql = this.sql.replaceAll("\\s+"," ");
         //todo: support indices with space?
         String indexName = sql.split(" ")[1];
-        final GetIndexRequestBuilder  indexRequestBuilder ;
+        final GetIndexRequest  indexRequestBuilder ;
         String type = null;
         if (indexName.startsWith("<")) {
             if (!indexName.endsWith(">")) {
@@ -38,12 +39,12 @@ public class ShowQueryAction extends QueryAction {
             indexName = indexAndType[0];
             type = indexAndType[1];
         }
-        indexRequestBuilder = client.admin().indices().prepareGetIndex();
+        indexRequestBuilder = new GetIndexRequest();
 
         if(!indexName.equals("*")){
-            indexRequestBuilder.addIndices(indexName);
+            indexRequestBuilder.indices(indexName);
             if(type!=null && !type.equals("")){
-                indexRequestBuilder.setTypes(type);
+                indexRequestBuilder.types(type);
             }
         }
         indexRequestBuilder.addFeatures(GetIndexRequest.Feature.MAPPINGS);
@@ -51,22 +52,25 @@ public class ShowQueryAction extends QueryAction {
         return new SqlElasticRequestBuilder() {
             @Override
             public ActionRequest request() {
-                return indexRequestBuilder.request();
+                return indexRequestBuilder;
             }
 
             @Override
             public String explain() {
-                return indexRequestBuilder.toString();
+//                return indexRequestBuilder.toString();
+                return null;
             }
 
             @Override
             public ActionResponse get() {
-                return indexRequestBuilder.get();
+//                return indexRequestBuilder.get();
+                return null;
             }
 
             @Override
             public ActionRequestBuilder getBuilder() {
-                return indexRequestBuilder;
+//                return indexRequestBuilder;
+                return null;
             }
         };
     }

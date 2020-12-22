@@ -3,6 +3,9 @@ package org.elasticsearch.jdbc;
 import com.ngw.BulkProcessorProxy;
 import org.elasticsearch.action.bulk.*;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.client.Node;
+import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.unit.TimeValue;
 import org.nlpcn.es4sql.Util;
@@ -20,15 +23,11 @@ import java.util.concurrent.TimeUnit;
  */
 public class ElasticSearchConnection implements Connection {
 
-    private BulkRequestBuilder bulkRequest;
-
-    private BulkProcessor bulkProcessor;
-
     private final QueryExecutor queryExecutor;
     private boolean autoCommit = false;
     private boolean readOnly = true;
 
-    private final Client client;
+    private final RestHighLevelClient client;
     private final Set<ElasticSearchStatement> statements = new HashSet<>();
 
     // 关闭标识
@@ -37,17 +36,11 @@ public class ElasticSearchConnection implements Connection {
 
     public ElasticSearchConnection(QueryExecutor queryExecutor) {
         this.queryExecutor = queryExecutor;
-        this.client = queryExecutor.getClient();
-        this.bulkRequest = this.client.prepareBulk();
-        this.bulkProcessor = BulkProcessorProxy.getBulkprocessor(client);
+        this.client = queryExecutor.getRestHighLevelClient();
     }
 
     public QueryExecutor getQueryExecutor() {
         return queryExecutor;
-    }
-
-    public Client getClient() {
-        return client;
     }
 
     @Override
@@ -92,7 +85,7 @@ public class ElasticSearchConnection implements Connection {
 
     protected int add(IndexAction dmlAction) throws Exception {
 //        queryExecutor.add(dmlAction, bulkRequest);
-        return queryExecutor.add(dmlAction, bulkProcessor);
+        return queryExecutor.add(dmlAction);
     }
 
     @Override
@@ -110,7 +103,7 @@ public class ElasticSearchConnection implements Connection {
 //            cleartatements();
 //            queryExecutor.commit(bulkRequest);
 //            bulkRequest = this.client.prepareBulk();
-            queryExecutor.commit(bulkProcessor);
+            queryExecutor.commit();
         } catch (Exception e) {
             throw new SQLException(e);
         }
@@ -118,7 +111,6 @@ public class ElasticSearchConnection implements Connection {
 
     @Override
     public void rollback() throws SQLException {
-        bulkRequest = this.client.prepareBulk();
         cleartatements();
     }
 
@@ -128,12 +120,7 @@ public class ElasticSearchConnection implements Connection {
         closeStatus = true;
         for (ElasticSearchStatement st : this.statements) st.close();
         cleartatements();
-        client.close();
-        try {
-            bulkProcessor.awaitClose(20, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            throw new SQLException(e);
-        }
+        queryExecutor.close();
     }
 
     @Override
@@ -143,9 +130,11 @@ public class ElasticSearchConnection implements Connection {
 
     @Override
     public DatabaseMetaData getMetaData() throws SQLException {
-        String host = ((TransportClient) client).transportAddresses().get(0).address().getHostName();
-        int port = ((TransportClient) client).transportAddresses().get(0).address().getPort();
-        return new ESDatabaseMetaData(host, port, client, this.getClientInfo(), this);
+        List<Node> nodes = client.getLowLevelClient().getNodes();
+
+        String host = nodes.get(0).getHost().toHostString();
+        int port = nodes.get(0).getHost().getPort();
+        return new ESDatabaseMetaData(host, port, client.getLowLevelClient(), this.getClientInfo(), this);
     }
 
     @Override

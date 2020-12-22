@@ -18,23 +18,23 @@ import org.nlpcn.es4sql.query.maker.QueryMaker;
 public class DeleteQueryAction extends QueryAction implements IndexAction {
 
 	private final Delete delete;
-	private DeleteByQueryRequestBuilder request;
+	private DeleteByQueryRequest request;
 
-	public DeleteQueryAction(Client client, Delete delete) {
-		super(client, delete);
+	public DeleteQueryAction(Delete delete) {
+		super(delete);
 		this.delete = delete;
 	}
 
 	@Override
 	public SqlElasticDeleteByQueryRequestBuilder explain() throws SqlParseException {
-		this.request = new DeleteByQueryRequestBuilder(client, DeleteByQueryAction.INSTANCE);
+		this.request = new DeleteByQueryRequest();
 
 		setIndicesAndTypes();
 		setWhere(delete.getWhere());
 
 		// maximum number of processed documents
 		if (delete.getRowCount() > -1) {
-			request.size(delete.getRowCount());
+			request.setSize(delete.getRowCount());
 		}
 
 		// set conflicts param
@@ -50,7 +50,7 @@ public class DeleteQueryAction extends QueryAction implements IndexAction {
 	 */
 	private void setIndicesAndTypes() {
 
-        DeleteByQueryRequest innerRequest = request.request();
+        DeleteByQueryRequest innerRequest = request;
         innerRequest.indices(query.getIndexArr());
         String[] typeArr = query.getTypeArr();
         if (typeArr!=null){
@@ -73,9 +73,9 @@ public class DeleteQueryAction extends QueryAction implements IndexAction {
 	private void setWhere(Where where) throws SqlParseException {
 		if (where != null) {
 			QueryBuilder whereQuery = QueryMaker.explan(where);
-			request.filter(whereQuery);
+			request.setQuery(whereQuery);
 		} else {
-			request.filter(QueryBuilders.matchAllQuery());
+			request.setQuery(QueryBuilders.matchAllQuery());
 		}
 	}
 
@@ -84,8 +84,8 @@ public class DeleteQueryAction extends QueryAction implements IndexAction {
 			if (hint.getType() == HintType.CONFLICTS && hint.getParams() != null && 0 < hint.getParams().length) {
 				String conflicts = hint.getParams()[0].toString();
 				switch (conflicts) {
-					case "proceed": request.abortOnVersionConflict(false); return;
-					case "abort": request.abortOnVersionConflict(true); return;
+					case "proceed": request.setAbortOnVersionConflict(false); return;
+					case "abort": request.setAbortOnVersionConflict(true); return;
 					default: throw new IllegalArgumentException("conflicts may only be \"proceed\" or \"abort\" but was [" + conflicts + "]");
 				}
 			}

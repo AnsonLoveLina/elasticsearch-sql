@@ -1,6 +1,9 @@
 package org.nlpcn.es4sql;
 
+import org.elasticsearch.action.ActionResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.nlpcn.es4sql.exception.SqlParseException;
 
 import java.sql.SQLFeatureNotSupportedException;
@@ -21,14 +24,14 @@ public class SearchDao {
 
 	}
 
-	private Client client = null;
+	private RestHighLevelClient client = null;
 
 
-	public SearchDao(Client client) {
+	public SearchDao(RestHighLevelClient client) {
 		this.client = client;
 	}
 
-    public Client getClient() {
+    public RestHighLevelClient getClient() {
         return client;
     }
 

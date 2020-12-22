@@ -9,11 +9,11 @@ import org.nlpcn.es4sql.query.QueryAction;
  */
 public class ESMultiQueryActionFactory {
 
-    public static QueryAction createMultiQueryAction(Client client, MultiQuerySelect multiSelect) throws SqlParseException {
+    public static QueryAction createMultiQueryAction(MultiQuerySelect multiSelect) throws SqlParseException {
         switch (multiSelect.getOperation()){
             case UNION_ALL:
             case UNION:
-                return new MultiQueryAction(client,multiSelect);
+                return new MultiQueryAction(multiSelect);
             default:
                 throw new SqlParseException("only supports union and union all");
         }

@@ -1,6 +1,7 @@
 package org.elasticsearch.plugin.nlpcn;
 
 import org.elasticsearch.client.Client;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.nlpcn.es4sql.exception.SqlParseException;
 import org.nlpcn.es4sql.query.multi.MultiQueryRequestBuilder;
 
@@ -8,7 +9,7 @@ import org.nlpcn.es4sql.query.multi.MultiQueryRequestBuilder;
  * Created by Eliran on 21/8/2016.
  */
 public class MultiRequestExecutorFactory {
-     public static ElasticHitsExecutor createExecutor(Client client, MultiQueryRequestBuilder builder) throws SqlParseException {
+     public static ElasticHitsExecutor createExecutor(RestHighLevelClient client, MultiQueryRequestBuilder builder) throws SqlParseException {
          switch (builder.getRelation()){
              case UNION_ALL:
              case UNION:

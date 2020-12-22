@@ -5,6 +5,7 @@ import com.google.common.collect.Lists;
 import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsResponse;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.client.RestClient;
 import org.elasticsearch.cluster.metadata.AliasMetaData;
 import org.elasticsearch.cluster.metadata.AliasOrIndex;
 import org.elasticsearch.cluster.metadata.IndexMetaData;
@@ -27,11 +28,11 @@ public class ESDatabaseMetaData implements DatabaseMetaData{
 
 	private String host;
 	private int port;
-	private Client client;
+	private RestClient client;
 	private Properties clientInfo;
 	private Connection conn;
 
-	public ESDatabaseMetaData(String host, int port, Client client, Properties clientInfo, Connection conn) {
+	public ESDatabaseMetaData(String host, int port, RestClient client, Properties clientInfo, Connection conn) {
 		this.host = host;
 		this.port = port;
 		this.client = client;
@@ -696,100 +697,102 @@ public class ESDatabaseMetaData implements DatabaseMetaData{
 	@Override
 	public ResultSet getTables(String catalog, String schemaPattern, String tableNamePattern, String[] types)
 			throws SQLException {
-        List<String> headers = Lists.newArrayList("TABLE_CAT","TABLE_SCHEM","TABLE_NAME","TABLE_TYPE","REMARKS","TYPE_CAT","TYPE_SCHEM","TYPE_NAME","SELF_REFERENCING_COL_NAME","REF_GENERATION");
-        List<List<Object>> lines = new ArrayList<>();
-        ElasticSearchResultSet result = new ElasticSearchResultSet(headers,lines);
-
-		//if(catalog != null && !catalog.equals(Util.CATALOG)) return result;
-		boolean lookForTables = types == null;
-		boolean lookForViews = types == null;
-		if(types != null) for(String type : types) {
-			if(type.equals("TABLE")) lookForTables = true;
-			if(type.equals("VIEW")) lookForViews = true;
-		}
-		if(!lookForTables && !lookForViews) return result;
-		// add query cache as a view to the list. It is not an actual table but can be used as such in FROM clause
-
-		schemaPattern = cleanPattern(schemaPattern);
-		tableNamePattern = cleanPattern(tableNamePattern);
-
-		if(lookForTables){
-			if(Pattern.matches(tableNamePattern, (String)clientInfo.get(Util.PROP_QUERY_CACHE_TABLE))){
-				List<Object> row = result.getNewRow();
-				row.set(2, clientInfo.get(Util.PROP_QUERY_CACHE_TABLE));
-				row.set(3, "GLOBAL TEMPORARY");
-				result.add(row);
-			}
-
-			ImmutableOpenMap<String, IndexMetaData> indices = client.admin().cluster()
-				    .prepareState().get().getState()
-				    .getMetaData().getIndices();
-			for(ObjectCursor<String> index : indices.keys()){
-				if(!Pattern.matches(schemaPattern, index.value)) continue;
-				for(ObjectCursor<String> type : indices.get(index.value).getMappings().keys()){
-					if(!Pattern.matches(tableNamePattern, type.value)) continue;
-					List<Object> row = result.getNewRow();
-					row.set(1, index.value);
-					row.set(2, type.value);
-					row.set(3, "TABLE");
-					result.add(row);
-				}
-			}
-		}
-
-		// add aliases as VIEW on this index
-		if(lookForViews){
-			ImmutableOpenMap<String, List<AliasMetaData>> aliasMd = client.admin().indices().prepareGetAliases().get().getAliases();
-			for(ObjectCursor<String> key : aliasMd.keys()){
-				if(schemaPattern.length() > 0 && !Pattern.matches(schemaPattern, key.value)) continue;
-				for(AliasMetaData amd : aliasMd.get(key.value)){
-					List<Object> row = result.getNewRow();
-					row.set(1, amd.alias());
-					row.set(3, "VIEW");
-					row.set(4, "Filter ("+amd.filter() == null ? "NONE" : amd.filter()+")");
-					result.add(row);
-				}
-			}
-
-			// OR get indexes part of the Alias provided as schema
-			if(result.getNrRows() <= 1){
-				for(ObjectCursor<String> key : aliasMd.keys()){
-					for(AliasMetaData amd : aliasMd.get(key.value)){
-						if(schemaPattern.length() > 0 && !Pattern.matches(schemaPattern, amd.alias())) continue;
-						List<Object> row = result.getNewRow();
-						row.set(1, key.value);
-						row.set(3, "VIEW");
-						row.set(4, "Filter ("+amd.filter() == null ? "NONE" : amd.filter()+")");
-						result.add(row);
-					}
-				}
-			}
-		}
-
-//		result.setTotal(result.getNrRows());
-		//System.out.println(result);
-		return result;
+        throw new SQLFeatureNotSupportedException(Util.getLoggingInfo());
+//        List<String> headers = Lists.newArrayList("TABLE_CAT","TABLE_SCHEM","TABLE_NAME","TABLE_TYPE","REMARKS","TYPE_CAT","TYPE_SCHEM","TYPE_NAME","SELF_REFERENCING_COL_NAME","REF_GENERATION");
+//        List<List<Object>> lines = new ArrayList<>();
+//        ElasticSearchResultSet result = new ElasticSearchResultSet(headers,lines);
+//
+//		//if(catalog != null && !catalog.equals(Util.CATALOG)) return result;
+//		boolean lookForTables = types == null;
+//		boolean lookForViews = types == null;
+//		if(types != null) for(String type : types) {
+//			if(type.equals("TABLE")) lookForTables = true;
+//			if(type.equals("VIEW")) lookForViews = true;
+//		}
+//		if(!lookForTables && !lookForViews) return result;
+//		// add query cache as a view to the list. It is not an actual table but can be used as such in FROM clause
+//
+//		schemaPattern = cleanPattern(schemaPattern);
+//		tableNamePattern = cleanPattern(tableNamePattern);
+//
+//		if(lookForTables){
+//			if(Pattern.matches(tableNamePattern, (String)clientInfo.get(Util.PROP_QUERY_CACHE_TABLE))){
+//				List<Object> row = result.getNewRow();
+//				row.set(2, clientInfo.get(Util.PROP_QUERY_CACHE_TABLE));
+//				row.set(3, "GLOBAL TEMPORARY");
+//				result.add(row);
+//			}
+//
+//			ImmutableOpenMap<String, IndexMetaData> indices = client.admin().cluster()
+//				    .prepareState().get().getState()
+//				    .getMetaData().getIndices();
+//			for(ObjectCursor<String> index : indices.keys()){
+//				if(!Pattern.matches(schemaPattern, index.value)) continue;
+//				for(ObjectCursor<String> type : indices.get(index.value).getMappings().keys()){
+//					if(!Pattern.matches(tableNamePattern, type.value)) continue;
+//					List<Object> row = result.getNewRow();
+//					row.set(1, index.value);
+//					row.set(2, type.value);
+//					row.set(3, "TABLE");
+//					result.add(row);
+//				}
+//			}
+//		}
+//
+//		// add aliases as VIEW on this index
+//		if(lookForViews){
+//			ImmutableOpenMap<String, List<AliasMetaData>> aliasMd = client.admin().indices().prepareGetAliases().get().getAliases();
+//			for(ObjectCursor<String> key : aliasMd.keys()){
+//				if(schemaPattern.length() > 0 && !Pattern.matches(schemaPattern, key.value)) continue;
+//				for(AliasMetaData amd : aliasMd.get(key.value)){
+//					List<Object> row = result.getNewRow();
+//					row.set(1, amd.alias());
+//					row.set(3, "VIEW");
+//					row.set(4, "Filter ("+amd.filter() == null ? "NONE" : amd.filter()+")");
+//					result.add(row);
+//				}
+//			}
+//
+//			// OR get indexes part of the Alias provided as schema
+//			if(result.getNrRows() <= 1){
+//				for(ObjectCursor<String> key : aliasMd.keys()){
+//					for(AliasMetaData amd : aliasMd.get(key.value)){
+//						if(schemaPattern.length() > 0 && !Pattern.matches(schemaPattern, amd.alias())) continue;
+//						List<Object> row = result.getNewRow();
+//						row.set(1, key.value);
+//						row.set(3, "VIEW");
+//						row.set(4, "Filter ("+amd.filter() == null ? "NONE" : amd.filter()+")");
+//						result.add(row);
+//					}
+//				}
+//			}
+//		}
+//
+////		result.setTotal(result.getNrRows());
+//		//System.out.println(result);
+//		return result;
 	}
 
 	@Override
 	public ResultSet getSchemas() throws SQLException {
-		ImmutableOpenMap<String, IndexMetaData> indices = client.admin().cluster()
-			    .prepareState().get().getState()
-			    .getMetaData().getIndices();
-
-		SortedMap<String, AliasOrIndex> aliasAndIndices = client.admin().cluster().prepareState().get().getState()
-    		.getMetaData().getAliasAndIndexLookup();
-
-        List<String> headers = Lists.newArrayList("TABLE_SCHEM","TABLE_CATALOG");
-        List<List<Object>> lines = new ArrayList<>();
-        ElasticSearchResultSet result = new ElasticSearchResultSet(headers,lines);
-		for(String key : aliasAndIndices.keySet()){
-			List<Object> row = result.getNewRow();
-			row.set(0, key);
-			row.set(1, "elasticsearch" /* aliasAndIndices.get(key).isAlias() ? "alias" : "index"*/);
-			result.add(row);
-		}
-		return result;
+        throw new SQLFeatureNotSupportedException(Util.getLoggingInfo());
+//		ImmutableOpenMap<String, IndexMetaData> indices = client.admin().cluster()
+//			    .prepareState().get().getState()
+//			    .getMetaData().getIndices();
+//
+//		SortedMap<String, AliasOrIndex> aliasAndIndices = client.admin().cluster().prepareState().get().getState()
+//    		.getMetaData().getAliasAndIndexLookup();
+//
+//        List<String> headers = Lists.newArrayList("TABLE_SCHEM","TABLE_CATALOG");
+//        List<List<Object>> lines = new ArrayList<>();
+//        ElasticSearchResultSet result = new ElasticSearchResultSet(headers,lines);
+//		for(String key : aliasAndIndices.keySet()){
+//			List<Object> row = result.getNewRow();
+//			row.set(0, key);
+//			row.set(1, "elasticsearch" /* aliasAndIndices.get(key).isAlias() ? "alias" : "index"*/);
+//			result.add(row);
+//		}
+//		return result;
 	}
 
 	@Override
@@ -824,135 +827,136 @@ public class ESDatabaseMetaData implements DatabaseMetaData{
 	@Override
 	public ResultSet getColumns(String catalog, String schemaPattern, String tableNamePattern, String columnNamePattern)
 			throws SQLException {
-		//schemaPattern = index;
-		//System.out.println("COLUMNS: cat="+catalog+", schemas="+schemaPattern+", tables="+tableNamePattern+", columns="+columnNamePattern);
-		schemaPattern = cleanPattern(schemaPattern);
-		tableNamePattern = cleanPattern(tableNamePattern);
-		columnNamePattern = cleanPattern(columnNamePattern);
-		boolean lateral = Util.getBooleanProp(clientInfo, Util.PROP_RESULT_NESTED_LATERAL, true);
-
-
-        List<String> headers = Lists.newArrayList("TABLE_CAT","TABLE_SCHEM","TABLE_NAME","COLUMN_NAME","DATA_TYPE","TYPE_NAME","COLUMN_SIZE","BUFFER_LENGTH","DECIMAL_DIGITS","NUM_PREC_RADIX","NULLABLE","REMARKS","COLUMN_DEF","SQL_DATA_TYPE","SQL_DATETIME_SUB","CHAR_OCTET_LENGTH","ORDINAL_POSITION","IS_NULLABLE","SCOPE_CATALOG","SCOPE_SCHEMA","SCOPE_TABLE","SOURCE_DATA_TYPE","IS_AUTOINCREMENT","IS_GENERATEDCOLUMN");
-        List<List<Object>> lines = new ArrayList<>();
-        ElasticSearchResultSet result = new ElasticSearchResultSet(headers,lines);
-		//if(catalog != null && !catalog.equals(Util.CATALOG)) return result;
-
-		try{
-			ImmutableOpenMap<String, IndexMetaData> indices = client.admin().cluster()
-				    .prepareState().get().getState()
-				    .getMetaData().getIndices();
-			boolean found = false;
-			for(ObjectCursor<String> index : indices.keys()){
-				if(schemaPattern != null && !Pattern.matches(schemaPattern, index.value)) continue;
-				found = true;
-				for(ObjectCursor<String> type : indices.get(index.value).getMappings().keys()){
-					if(tableNamePattern != null && !Pattern.matches(tableNamePattern, type.value)) continue;
-
-					// add _id, _type and _index fields
-					List<Object> row = result.getNewRow();
-					row.set(0, "elasticsearch");
-					row.set(1, index.value);
-					row.set(2, type.value);
-					row.set(3, "_id");
-					row.set(4, ESJDBCUtil.getTypeIdForObject(""));
-					row.set(5, "string");
-					row.set(11, "The document _id used by elasticsearch");
-					row.set(22, "YES");
-					row.set(23, "YES");
-					result.add(row);
-
-					row = result.getNewRow();
-					row.set(0, "elasticsearch");
-					row.set(1, index.value);
-					row.set(2, type.value);
-					row.set(3, "_type");
-					row.set(4, ESJDBCUtil.getTypeIdForObject(""));
-					row.set(5, "string");
-					row.set(11, "The type a record is part of");
-					row.set(22, "NO");
-					row.set(23, "YES");
-					result.add(row);
-
-					row = result.getNewRow();
-					row.set(0, "elasticsearch");
-					row.set(1, index.value);
-					row.set(2, type.value);
-					row.set(3, "_index");
-					row.set(4, ESJDBCUtil.getTypeIdForObject(""));
-					row.set(5, "string");
-					row.set(11, "The index a record is part of");
-					row.set(22, "NO");
-					row.set(23, "YES");
-					result.add(row);
-
-					MappingMetaData typeMd = indices.get(index.value).getMappings().get(type.value);
-					if(typeMd != null && (Map)typeMd.getSourceAsMap().get("properties") != null){
-						addColumnInfo((Map)typeMd.getSourceAsMap().get("properties"), null, 0, index.value, type.value, result, columnNamePattern, lateral);
-					}
-				}
-			}
-			if (!found) {
-				GetMappingsResponse response = client.admin().indices()
-						.prepareGetMappings(schemaPattern)
-						.execute().actionGet();
-				ImmutableOpenMap<String, ImmutableOpenMap<String, MappingMetaData>> mappings
-						= response.mappings();
-				for(ObjectCursor<String> index : mappings.keys()) {
-					if (schemaPattern != null && !Pattern.matches(schemaPattern, index.value)) continue;
-					for(ObjectCursor<String> type : mappings.get(index.value).keys()){
-						if(tableNamePattern != null && !Pattern.matches(tableNamePattern, type.value)) continue;
-
-						// add _id, _type and _index fields
-						List<Object> row = result.getNewRow();
-						row.set(0, "elasticsearch");
-						row.set(1, index.value);
-						row.set(2, type.value);
-						row.set(3, "_id");
-						row.set(4, ESJDBCUtil.getTypeIdForObject(""));
-						row.set(5, "string");
-						row.set(11, "The document _id used by elasticsearch");
-						row.set(22, "YES");
-						row.set(23, "YES");
-						result.add(row);
-
-						row = result.getNewRow();
-						row.set(0, "elasticsearch");
-						row.set(1, index.value);
-						row.set(2, type.value);
-						row.set(3, "_type");
-						row.set(4, ESJDBCUtil.getTypeIdForObject(""));
-						row.set(5, "string");
-						row.set(11, "The type a record is part of");
-						row.set(22, "NO");
-						row.set(23, "YES");
-						result.add(row);
-
-						row = result.getNewRow();
-						row.set(0, "elasticsearch");
-						row.set(1, index.value);
-						row.set(2, type.value);
-						row.set(3, "_index");
-						row.set(4, ESJDBCUtil.getTypeIdForObject(""));
-						row.set(5, "string");
-						row.set(11, "The index a record is part of");
-						row.set(22, "NO");
-						row.set(23, "YES");
-						result.add(row);
-
-						MappingMetaData typeMd = mappings.get(index.value).get(type.value);
-						if(typeMd != null && (Map)typeMd.getSourceAsMap().get("properties") != null){
-							addColumnInfo((Map)typeMd.getSourceAsMap().get("properties"), null, 0, index.value, type.value, result, columnNamePattern, lateral);
-						}
-					}
-
-				}
-			}
-		}catch(Exception e){
-			throw new SQLException("Unable to retrieve table data", e);
-		}
-//		result.setTotal(result.getNrRows());
-		//System.out.println(result);
-		return result;
+        throw new SQLFeatureNotSupportedException(Util.getLoggingInfo());
+//		//schemaPattern = index;
+//		//System.out.println("COLUMNS: cat="+catalog+", schemas="+schemaPattern+", tables="+tableNamePattern+", columns="+columnNamePattern);
+//		schemaPattern = cleanPattern(schemaPattern);
+//		tableNamePattern = cleanPattern(tableNamePattern);
+//		columnNamePattern = cleanPattern(columnNamePattern);
+//		boolean lateral = Util.getBooleanProp(clientInfo, Util.PROP_RESULT_NESTED_LATERAL, true);
+//
+//
+//        List<String> headers = Lists.newArrayList("TABLE_CAT","TABLE_SCHEM","TABLE_NAME","COLUMN_NAME","DATA_TYPE","TYPE_NAME","COLUMN_SIZE","BUFFER_LENGTH","DECIMAL_DIGITS","NUM_PREC_RADIX","NULLABLE","REMARKS","COLUMN_DEF","SQL_DATA_TYPE","SQL_DATETIME_SUB","CHAR_OCTET_LENGTH","ORDINAL_POSITION","IS_NULLABLE","SCOPE_CATALOG","SCOPE_SCHEMA","SCOPE_TABLE","SOURCE_DATA_TYPE","IS_AUTOINCREMENT","IS_GENERATEDCOLUMN");
+//        List<List<Object>> lines = new ArrayList<>();
+//        ElasticSearchResultSet result = new ElasticSearchResultSet(headers,lines);
+//		//if(catalog != null && !catalog.equals(Util.CATALOG)) return result;
+//
+//		try{
+//			ImmutableOpenMap<String, IndexMetaData> indices = client.admin().cluster()
+//				    .prepareState().get().getState()
+//				    .getMetaData().getIndices();
+//			boolean found = false;
+//			for(ObjectCursor<String> index : indices.keys()){
+//				if(schemaPattern != null && !Pattern.matches(schemaPattern, index.value)) continue;
+//				found = true;
+//				for(ObjectCursor<String> type : indices.get(index.value).getMappings().keys()){
+//					if(tableNamePattern != null && !Pattern.matches(tableNamePattern, type.value)) continue;
+//
+//					// add _id, _type and _index fields
+//					List<Object> row = result.getNewRow();
+//					row.set(0, "elasticsearch");
+//					row.set(1, index.value);
+//					row.set(2, type.value);
+//					row.set(3, "_id");
+//					row.set(4, ESJDBCUtil.getTypeIdForObject(""));
+//					row.set(5, "string");
+//					row.set(11, "The document _id used by elasticsearch");
+//					row.set(22, "YES");
+//					row.set(23, "YES");
+//					result.add(row);
+//
+//					row = result.getNewRow();
+//					row.set(0, "elasticsearch");
+//					row.set(1, index.value);
+//					row.set(2, type.value);
+//					row.set(3, "_type");
+//					row.set(4, ESJDBCUtil.getTypeIdForObject(""));
+//					row.set(5, "string");
+//					row.set(11, "The type a record is part of");
+//					row.set(22, "NO");
+//					row.set(23, "YES");
+//					result.add(row);
+//
+//					row = result.getNewRow();
+//					row.set(0, "elasticsearch");
+//					row.set(1, index.value);
+//					row.set(2, type.value);
+//					row.set(3, "_index");
+//					row.set(4, ESJDBCUtil.getTypeIdForObject(""));
+//					row.set(5, "string");
+//					row.set(11, "The index a record is part of");
+//					row.set(22, "NO");
+//					row.set(23, "YES");
+//					result.add(row);
+//
+//					MappingMetaData typeMd = indices.get(index.value).getMappings().get(type.value);
+//					if(typeMd != null && (Map)typeMd.getSourceAsMap().get("properties") != null){
+//						addColumnInfo((Map)typeMd.getSourceAsMap().get("properties"), null, 0, index.value, type.value, result, columnNamePattern, lateral);
+//					}
+//				}
+//			}
+//			if (!found) {
+//				GetMappingsResponse response = client.admin().indices()
+//						.prepareGetMappings(schemaPattern)
+//						.execute().actionGet();
+//				ImmutableOpenMap<String, ImmutableOpenMap<String, MappingMetaData>> mappings
+//						= response.mappings();
+//				for(ObjectCursor<String> index : mappings.keys()) {
+//					if (schemaPattern != null && !Pattern.matches(schemaPattern, index.value)) continue;
+//					for(ObjectCursor<String> type : mappings.get(index.value).keys()){
+//						if(tableNamePattern != null && !Pattern.matches(tableNamePattern, type.value)) continue;
+//
+//						// add _id, _type and _index fields
+//						List<Object> row = result.getNewRow();
+//						row.set(0, "elasticsearch");
+//						row.set(1, index.value);
+//						row.set(2, type.value);
+//						row.set(3, "_id");
+//						row.set(4, ESJDBCUtil.getTypeIdForObject(""));
+//						row.set(5, "string");
+//						row.set(11, "The document _id used by elasticsearch");
+//						row.set(22, "YES");
+//						row.set(23, "YES");
+//						result.add(row);
+//
+//						row = result.getNewRow();
+//						row.set(0, "elasticsearch");
+//						row.set(1, index.value);
+//						row.set(2, type.value);
+//						row.set(3, "_type");
+//						row.set(4, ESJDBCUtil.getTypeIdForObject(""));
+//						row.set(5, "string");
+//						row.set(11, "The type a record is part of");
+//						row.set(22, "NO");
+//						row.set(23, "YES");
+//						result.add(row);
+//
+//						row = result.getNewRow();
+//						row.set(0, "elasticsearch");
+//						row.set(1, index.value);
+//						row.set(2, type.value);
+//						row.set(3, "_index");
+//						row.set(4, ESJDBCUtil.getTypeIdForObject(""));
+//						row.set(5, "string");
+//						row.set(11, "The index a record is part of");
+//						row.set(22, "NO");
+//						row.set(23, "YES");
+//						result.add(row);
+//
+//						MappingMetaData typeMd = mappings.get(index.value).get(type.value);
+//						if(typeMd != null && (Map)typeMd.getSourceAsMap().get("properties") != null){
+//							addColumnInfo((Map)typeMd.getSourceAsMap().get("properties"), null, 0, index.value, type.value, result, columnNamePattern, lateral);
+//						}
+//					}
+//
+//				}
+//			}
+//		}catch(Exception e){
+//			throw new SQLException("Unable to retrieve table data", e);
+//		}
+////		result.setTotal(result.getNrRows());
+//		//System.out.println(result);
+//		return result;
 	}
 
 	@SuppressWarnings("unchecked")

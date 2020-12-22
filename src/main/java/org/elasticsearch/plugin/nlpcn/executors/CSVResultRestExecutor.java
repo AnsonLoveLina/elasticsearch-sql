@@ -2,6 +2,7 @@ package org.elasticsearch.plugin.nlpcn.executors;
 
 import com.google.common.base.Joiner;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.plugin.nlpcn.QueryActionElasticExecutor;
 import org.elasticsearch.rest.BytesRestResponse;
 import org.elasticsearch.rest.RestChannel;
@@ -16,7 +17,7 @@ import java.util.Map;
 public class CSVResultRestExecutor implements RestExecutor {
 
     @Override
-    public void execute(Client client, Map<String, String> params, Action queryAction, RestChannel channel) throws Exception {
+    public void execute(RestHighLevelClient client, Map<String, String> params, Action queryAction, RestChannel channel) throws Exception {
         Object queryResult = QueryActionElasticExecutor.executeAnyAction(client, queryAction);
 
         boolean flat = getBooleanOrDefault(params,"flat",false);
@@ -39,7 +40,7 @@ public class CSVResultRestExecutor implements RestExecutor {
     }
 
     @Override
-    public String execute(Client client, Map<String, String> params, Action queryAction) throws Exception {
+    public String execute(RestHighLevelClient client, Map<String, String> params, Action queryAction) throws Exception {
         Object queryResult = QueryActionElasticExecutor.executeAnyAction(client, queryAction);
 
         boolean flat = getBooleanOrDefault(params,"flat",false);

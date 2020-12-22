@@ -1,11 +1,10 @@
 package org.elasticsearch.plugin.nlpcn;
 
 import com.alibaba.druid.sql.ast.statement.SQLJoinTableSource;
-import org.elasticsearch.action.search.MultiSearchRequest;
-import org.elasticsearch.action.search.MultiSearchResponse;
-import org.elasticsearch.action.search.SearchRequestBuilder;
-import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.search.*;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.text.Text;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.search.SearchHit;
@@ -18,6 +17,7 @@ import org.nlpcn.es4sql.query.DefaultQueryAction;
 import org.nlpcn.es4sql.query.join.NestedLoopsElasticRequestBuilder;
 import org.nlpcn.es4sql.query.join.TableInJoinRequestBuilder;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -28,9 +28,9 @@ import java.util.Map;
 public class NestedLoopsElasticExecutor extends ElasticJoinExecutor {
 
     private final NestedLoopsElasticRequestBuilder nestedLoopsRequest;
-    private final Client client;
+    private final RestHighLevelClient client;
 
-    public NestedLoopsElasticExecutor(Client client, NestedLoopsElasticRequestBuilder nestedLoops) {
+    public NestedLoopsElasticExecutor(RestHighLevelClient client, NestedLoopsElasticRequestBuilder nestedLoops) {
         super(nestedLoops);
         this.client = client;
         this.nestedLoopsRequest = nestedLoops;
@@ -73,7 +73,11 @@ public class NestedLoopsElasticExecutor extends ElasticJoinExecutor {
             if(!finishedWithFirstTable)
             {
                 if(needScrollForFirstTable)
-                    firstTableResponse = client.prepareSearchScroll(firstTableResponse.getScrollId()).setScroll(new TimeValue(600000)).get();
+                    try {
+                        firstTableResponse = client.scroll(new SearchScrollRequest(firstTableResponse.getScrollId()), RequestOptions.DEFAULT);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 else finishedWithFirstTable = true;
             }
 
@@ -82,7 +86,12 @@ public class NestedLoopsElasticExecutor extends ElasticJoinExecutor {
     }
 
     private int combineResultsFromMultiResponses(List<SearchHit> combinedResults, int totalLimit, int currentCombinedResults, SearchHit[] hits, int currentIndex, MultiSearchRequest multiSearchRequest) {
-        MultiSearchResponse.Item[] responses = client.multiSearch(multiSearchRequest).actionGet().getResponses();
+        MultiSearchResponse.Item[] responses = new MultiSearchResponse.Item[0];
+        try {
+            responses = client.msearch(multiSearchRequest, RequestOptions.DEFAULT).getResponses();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         String t1Alias = nestedLoopsRequest.getFirstTable().getAlias();
         String t2Alias = nestedLoopsRequest.getSecondTable().getAlias();
 
@@ -153,7 +162,7 @@ public class NestedLoopsElasticExecutor extends ElasticJoinExecutor {
             if(newWhere.getWheres().size() != 0) {
                 secondTableSelect.setWhere(newWhere);
             }
-            DefaultQueryAction action = new DefaultQueryAction(this.client , secondTableSelect);
+            DefaultQueryAction action = new DefaultQueryAction(secondTableSelect);
             action.explain();
             SearchRequestBuilder secondTableRequest = action.getRequestBuilder();
             Integer secondTableHintLimit = this.nestedLoopsRequest.getSecondTable().getHintLimit();
@@ -186,7 +195,7 @@ public class NestedLoopsElasticExecutor extends ElasticJoinExecutor {
             }
             else {
                 //scroll request with max.
-                responseWithHits = scrollOneTimeWithMax(client,tableRequest);
+                responseWithHits = scrollOneTimeWithMax(tableRequest);
                 if(responseWithHits.getHits().getTotalHits() < MAX_RESULTS_ON_ONE_FETCH)
                     needScrollForFirstTable = true;
             }

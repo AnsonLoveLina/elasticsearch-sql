@@ -12,8 +12,8 @@ import org.nlpcn.es4sql.exception.SqlParseException;
  */
 public class ESNestedLoopsQueryAction extends ESJoinQueryAction {
 
-    public ESNestedLoopsQueryAction(Client client, JoinSelect joinSelect) {
-        super(client, joinSelect);
+    public ESNestedLoopsQueryAction(JoinSelect joinSelect) {
+        super(joinSelect);
     }
 
     @Override

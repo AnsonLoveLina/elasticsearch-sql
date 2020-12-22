@@ -1,5 +1,7 @@
 package org.nlpcn.es4sql.query;
 
+import com.google.common.collect.Lists;
+import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.client.Client;
@@ -29,26 +31,32 @@ import java.util.Map;
 public abstract class QueryAction implements Action {
 
     protected org.nlpcn.es4sql.domain.Query query;
-    protected Client client;
 
-    public QueryAction(Client client, Query query) {
-        this.client = client;
+    public String[] getIndexArr() {
+        return query.getIndexArr();
+    }
+
+    public String[] getTypeArr() {
+        return query.getTypeArr();
+    }
+
+    public QueryAction(Query query) {
         this.query = query;
     }
 
-    protected void updateRequestWithStats(Select select, SearchRequestBuilder request) {
+    protected void updateRequestWithStats(Select select, SearchRequest request) {
         for (Hint hint : select.getHints()) {
             if (hint.getType() == HintType.STATS && hint.getParams() != null && 0 < hint.getParams().length) {
-                request.setStats(Arrays.stream(hint.getParams()).map(Object::toString).toArray(String[]::new));
+                request.source().stats(Lists.newArrayList(Arrays.stream(hint.getParams()).map(Object::toString).toArray(String[]::new)));
             }
         }
     }
 
-    protected void updateRequestWithCollapse(Select select, SearchRequestBuilder request) throws SqlParseException {
+    protected void updateRequestWithCollapse(Select select, SearchRequest request) throws SqlParseException {
         for (Hint hint : select.getHints()) {
             if (hint.getType() == HintType.COLLAPSE && hint.getParams() != null && 0 < hint.getParams().length) {
                 try (XContentParser parser = JsonXContent.jsonXContent.createParser(NamedXContentRegistry.EMPTY, LoggingDeprecationHandler.INSTANCE, hint.getParams()[0].toString())) {
-                    request.setCollapse(CollapseBuilder.fromXContent(parser));
+                    request.source().collapse(CollapseBuilder.fromXContent(parser));
                 } catch (IOException e) {
                     throw new SqlParseException("could not parse collapse hint: " + e.getMessage());
                 }
@@ -56,19 +64,19 @@ public abstract class QueryAction implements Action {
         }
     }
 
-    protected void updateRequestWithPostFilter(Select select, SearchRequestBuilder request) {
+    protected void updateRequestWithPostFilter(Select select, SearchRequest request) {
         for (Hint hint : select.getHints()) {
             if (hint.getType() == HintType.POST_FILTER && hint.getParams() != null && 0 < hint.getParams().length) {
-                request.setPostFilter(QueryBuilders.wrapperQuery(hint.getParams()[0].toString()));
+                request.source().postFilter(QueryBuilders.wrapperQuery(hint.getParams()[0].toString()));
             }
         }
     }
 
-    protected void updateRequestWithIndexAndRoutingOptions(Select select, SearchRequestBuilder request) {
+    protected void updateRequestWithIndexAndRoutingOptions(Select select, SearchRequest request) {
         for (Hint hint : select.getHints()) {
             if (hint.getType() == HintType.IGNORE_UNAVAILABLE) {
                 //saving the defaults from TransportClient search
-                request.setIndicesOptions(IndicesOptions.fromOptions(true, false, true, false, IndicesOptions.strictExpandOpenAndForbidClosed()));
+                request.indicesOptions(IndicesOptions.fromOptions(true, false, true, false, IndicesOptions.strictExpandOpenAndForbidClosed()));
             }
             if (hint.getType() == HintType.ROUTINGS) {
                 Object[] routings = hint.getParams();
@@ -76,20 +84,20 @@ public abstract class QueryAction implements Action {
                 for (int i = 0; i < routings.length; i++) {
                     routingsAsStringArray[i] = routings[i].toString();
                 }
-                request.setRouting(routingsAsStringArray);
+                request.routing(routingsAsStringArray);
             }
         }
     }
 
-    protected void updateRequestWithPreference(Select select, SearchRequestBuilder request) {
+    protected void updateRequestWithPreference(Select select, SearchRequest request) {
         for (Hint hint : select.getHints()) {
             if (hint.getType() == HintType.PREFERENCE && hint.getParams() != null && 0 < hint.getParams().length) {
-                request.setPreference(hint.getParams()[0].toString());
+                request.preference(hint.getParams()[0].toString());
             }
         }
     }
 
-    protected void updateRequestWithHighlight(Select select, SearchRequestBuilder request) {
+    protected void updateRequestWithHighlight(Select select, SearchRequest request) {
         boolean foundAnyHighlights = false;
         HighlightBuilder highlightBuilder = new HighlightBuilder();
         for (Hint hint : select.getHints()) {
@@ -102,12 +110,11 @@ public abstract class QueryAction implements Action {
             }
         }
         if (foundAnyHighlights) {
-            request.highlighter(highlightBuilder);
+            request.source().highlighter(highlightBuilder);
         }
     }
 
-    protected HighlightBuilder.Field parseHighlightField(Object[] params)
-    {
+    protected HighlightBuilder.Field parseHighlightField(Object[] params) {
         if (params == null || params.length == 0 || params.length > 2) {
             //todo: exception.
         }

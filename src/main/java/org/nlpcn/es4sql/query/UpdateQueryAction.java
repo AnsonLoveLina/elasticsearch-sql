@@ -3,6 +3,7 @@ package org.nlpcn.es4sql.query;
 
 import com.alibaba.druid.sql.ast.statement.SQLUpdateSetItem;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.reindex.*;
@@ -22,16 +23,16 @@ import java.util.List;
 public class UpdateQueryAction extends QueryAction implements IndexAction {
 
     private final Update update;
-    private UpdateByQueryRequestBuilder request;
+    private UpdateByQueryRequest request;
 
-    public UpdateQueryAction(Client client, Update update) {
-        super(client, update);
+    public UpdateQueryAction(Update update) {
+        super(update);
         this.update = update;
     }
 
     @Override
     public SqlElasticUpdateByQueryRequestBuilder explain() throws SqlParseException {
-        this.request = new UpdateByQueryRequestBuilder(client, UpdateByQueryAction.INSTANCE);
+        request = new UpdateByQueryRequest();
 
         setIndicesAndTypes();
         setWhere(update.getWhere());
@@ -39,11 +40,12 @@ public class UpdateQueryAction extends QueryAction implements IndexAction {
 
         // maximum number of processed documents
         if (update.getRowCount() > -1) {
-            request.size(update.getRowCount());
+            request.setSize(update.getRowCount());
         }
 
         // set conflicts param
         updateRequestWithConflicts();
+        request.setAbortOnVersionConflict(true);
 
         SqlElasticUpdateByQueryRequestBuilder updateByQueryRequestBuilder = new SqlElasticUpdateByQueryRequestBuilder(request);
         return updateByQueryRequestBuilder;
@@ -54,7 +56,7 @@ public class UpdateQueryAction extends QueryAction implements IndexAction {
         for (SQLUpdateSetItem item : items) {
             sb.append("ctx._source.").append(item.getColumn()).append("=").append(item.getValue()).append(";\n");
         }
-        request.script(new Script(ScriptType.INLINE,
+        request.setScript(new Script(ScriptType.INLINE,
                 "painless",
                 sb.toString(),
                 Collections.emptyMap()));
@@ -66,7 +68,7 @@ public class UpdateQueryAction extends QueryAction implements IndexAction {
      */
     private void setIndicesAndTypes() {
 
-        UpdateByQueryRequest innerRequest = request.request();
+        UpdateByQueryRequest innerRequest = request;
         innerRequest.indices(query.getIndexArr());
         String[] typeArr = query.getTypeArr();
         if (typeArr != null) {
@@ -89,9 +91,9 @@ public class UpdateQueryAction extends QueryAction implements IndexAction {
     private void setWhere(Where where) throws SqlParseException {
         if (where != null) {
             QueryBuilder whereQuery = QueryMaker.explan(where);
-            request.filter(whereQuery);
+            request.setQuery(whereQuery);
         } else {
-            request.filter(QueryBuilders.matchAllQuery());
+            request.setQuery(QueryBuilders.matchAllQuery());
         }
     }
 
@@ -101,10 +103,10 @@ public class UpdateQueryAction extends QueryAction implements IndexAction {
                 String conflicts = hint.getParams()[0].toString();
                 switch (conflicts) {
                     case "proceed":
-                        request.abortOnVersionConflict(false);
+                        request.setAbortOnVersionConflict(false);
                         return;
                     case "abort":
-                        request.abortOnVersionConflict(true);
+                        request.setAbortOnVersionConflict(true);
                         return;
                     default:
                         throw new IllegalArgumentException("conflicts may only be \"proceed\" or \"abort\" but was [" + conflicts + "]");
