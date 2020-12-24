@@ -6,11 +6,13 @@ import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.apache.http.nio.entity.NStringEntity;
 import org.apache.http.util.EntityUtils;
+import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.*;
@@ -73,7 +75,14 @@ public class SqlUtil {
                     public void onFailure(Node node) {
                         logger.error("node left:", node);
                     }
-                });
+                }).setRequestConfigCallback(
+                        new RestClientBuilder.RequestConfigCallback() {
+                            @Override
+                            public RequestConfig.Builder customizeRequestConfig(
+                                    RequestConfig.Builder requestConfigBuilder) {
+                                return requestConfigBuilder.setSocketTimeout(60000).setConnectionRequestTimeout(60000);
+                            }
+                        });
     }
 
     public static String requestSql(String sql, RestHighLevelClient restHighLevelClient) {
@@ -82,14 +91,31 @@ public class SqlUtil {
         try {
             Action action = searchDao.explain(sql);
             SearchResponse searchResponse = restHighLevelClient.search((SearchRequest) action.explain().request(), RequestOptions.DEFAULT);
+            if (searchResponse.status().getStatus() != 200) {
+                return null;
+            }
             return searchResponse.toString();
-        } catch (SqlParseException | SQLFeatureNotSupportedException | IOException throwables) {
+        } catch (Exception throwables) {
             throwables.printStackTrace();
         }
         return null;
     }
 
     public static String request(String url, Map<String, String> headers, String body, Constant.Method method, RestClient restClient) {
+        try {
+            return requestRetry(url, headers, body, method, restClient);
+        } catch (Exception e) {
+            logger.error("retry! url:" + url + "\nmethod:" + method.getString());
+            try {
+                return requestRetry(url, headers, body, method, restClient);
+            } catch (Exception exception) {
+                exception.printStackTrace();
+            }
+        }
+        return null;
+    }
+
+    public static String requestRetry(String url, Map<String, String> headers, String body, Constant.Method method, RestClient restClient) throws Exception {
         RequestOptions.Builder options = RequestOptions.DEFAULT.toBuilder();
         if (headers != null) {
             for (Map.Entry<String, String> header : headers.entrySet()) {
@@ -101,12 +127,11 @@ public class SqlUtil {
         Request request = new Request(method.getString(), url);
         request.setEntity(entity);
         request.setOptions(options);
-        try {
-            Response response = restClient.performRequest(request);
-            return EntityUtils.toString(response.getEntity());
-        } catch (IOException e) {
-            e.printStackTrace();
+
+        Response response = restClient.performRequest(request);
+        if (response.getStatusLine().getStatusCode() != 200) {
+            return null;
         }
-        return null;
+        return EntityUtils.toString(response.getEntity());
     }
 }
